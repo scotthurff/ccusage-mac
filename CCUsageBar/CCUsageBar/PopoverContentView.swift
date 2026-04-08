@@ -5,15 +5,16 @@ struct PopoverContentView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            todaySection
-            Divider()
             dailyListSection
+                .padding(.top, 8)
+                .padding(.bottom, 8)
             Divider()
             monthlyTotalSection
             Divider()
             FooterView()
         }
         .frame(width: 320)
+        .fontDesign(.monospaced)
     }
 
     // MARK: - Today Hero
@@ -28,11 +29,10 @@ struct PopoverContentView: View {
             Spacer()
             if appState.hasData {
                 Text(appState.todayCostLabel)
-                    .font(.system(.title, design: .rounded, weight: .semibold))
-                    .monospacedDigit()
+                    .font(.system(.title, weight: .semibold))
             } else {
                 Text("--")
-                    .font(.system(.title, design: .rounded, weight: .semibold))
+                    .font(.system(.title, weight: .semibold))
                     .foregroundStyle(.secondary)
             }
         }
@@ -43,13 +43,6 @@ struct PopoverContentView: View {
 
     private var dailyListSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Last 7 Days")
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(.secondary)
-                .padding(.horizontal)
-                .padding(.top, 10)
-                .padding(.bottom, 6)
-
             if appState.hasData {
                 ForEach(appState.last7Days) { day in
                     dayRow(day)
@@ -86,7 +79,7 @@ struct PopoverContentView: View {
 
     private func dayRow(_ day: DailyUsage) -> some View {
         HStack(spacing: 8) {
-            Text(AppState.displayDate(day.date))
+            Text(AppState.displayDate(day.date).uppercased())
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .frame(width: 70, alignment: .leading)
@@ -96,14 +89,14 @@ struct PopoverContentView: View {
                     ? day.totalCost / appState.maxDailyCost
                     : 0
                 RoundedRectangle(cornerRadius: 3)
-                    .fill(.blue.opacity(0.7))
+                    .fill(Color(red: 0.85, green: 0.45, blue: 0.25))
                     .frame(width: max(4, geo.size.width * fraction))
             }
             .frame(height: 12)
 
             Text(AppState.formatCurrency(day.totalCost))
                 .font(.caption)
-                .monospacedDigit()
+
                 .frame(width: 65, alignment: .trailing)
         }
         .padding(.horizontal)
@@ -114,12 +107,12 @@ struct PopoverContentView: View {
 
     private var monthlyTotalSection: some View {
         HStack {
-            Text("\(appState.currentMonthName) Total")
+            Text("\(appState.currentMonthName) Total".uppercased())
                 .font(.subheadline.weight(.medium))
             Spacer()
             Text(AppState.formatCurrency(appState.monthlyTotal))
                 .font(.subheadline.weight(.semibold))
-                .monospacedDigit()
+
         }
         .padding()
     }
