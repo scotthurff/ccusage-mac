@@ -59,3 +59,9 @@
 **Decision**: Race ccusage execution against a 30-second timeout. On timeout, terminate the process.
 
 **Why**: Without a timeout, a hung ccusage process (network issue, filesystem lock) would silently block all future refreshes forever.
+
+## 2026-04-07: Render menu bar label as NSImage, not SwiftUI Text
+
+**Decision**: Use `NSImage` rendering with `NSFont.monospacedSystemFont(ofSize: 11, weight: .medium)` for the menu bar label instead of SwiftUI `Text` views.
+
+**Why**: SwiftUI's `MenuBarExtra` label ignores custom font settings (size, font family). Rendering as an `NSImage` with `isTemplate = true` gives full control over font, size, and spacing while still adapting to light/dark menu bar.
