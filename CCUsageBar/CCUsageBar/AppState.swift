@@ -41,6 +41,10 @@ class AppState: ObservableObject {
         totals?.totalCost ?? dailyData.reduce(0) { $0 + $1.totalCost }
     }
 
+    var monthlyTokens: Int {
+        totals?.totalTokens ?? dailyData.reduce(0) { $0 + $1.totalTokens }
+    }
+
     var currentMonthName: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMMM"
@@ -120,6 +124,14 @@ class AppState: ObservableObject {
     }
 
     // MARK: - Helpers
+
+    static func formatTokens(_ value: Int) -> String {
+        let v = Double(value)
+        if v >= 1_000_000_000 { return String(format: "%.1fB", v / 1_000_000_000) }
+        if v >= 1_000_000 { return String(format: "%.1fM", v / 1_000_000) }
+        if v >= 1_000 { return String(format: "%.1fK", v / 1_000) }
+        return "\(value)"
+    }
 
     static func formatCurrency(_ value: Double) -> String {
         let formatter = NumberFormatter()

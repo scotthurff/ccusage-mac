@@ -94,10 +94,14 @@ struct PopoverContentView: View {
             }
             .frame(height: 12)
 
-            Text(AppState.formatCurrency(day.totalCost))
-                .font(.caption)
-
-                .frame(width: 65, alignment: .trailing)
+            VStack(alignment: .trailing, spacing: 1) {
+                Text(AppState.formatCurrency(day.totalCost))
+                    .font(.caption)
+                Text("\(AppState.formatTokens(day.totalTokens)) tok")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(width: 65, alignment: .trailing)
         }
         .padding(.horizontal)
         .padding(.vertical, 4)
@@ -110,9 +114,13 @@ struct PopoverContentView: View {
             Text("\(appState.currentMonthName) Total".uppercased())
                 .font(.subheadline.weight(.medium))
             Spacer()
-            Text(AppState.formatCurrency(appState.monthlyTotal))
-                .font(.subheadline.weight(.semibold))
-
+            VStack(alignment: .trailing, spacing: 1) {
+                Text(AppState.formatCurrency(appState.monthlyTotal))
+                    .font(.subheadline.weight(.semibold))
+                Text("\(AppState.formatTokens(appState.monthlyTokens)) tok")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
         }
         .padding()
     }
