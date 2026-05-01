@@ -73,7 +73,7 @@ class AppState: ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
-        let since = Self.firstOfMonthString()
+        let since = Self.sinceDateString()
 
         do {
             let response = try await runner.fetchUsage(since: since)
@@ -149,12 +149,13 @@ class AppState: ObservableObject {
         return formatter.string(from: Date())
     }
 
-    static func firstOfMonthString() -> String {
+    static func sinceDateString() -> String {
+        // ccusage hangs on large date ranges, so request a 14-day window
+        // (popover only shows last 7 days; extra buffer for stability)
         let cal = Calendar.current
-        let comps = cal.dateComponents([.year, .month], from: Date())
-        let year = comps.year ?? 2026
-        let month = comps.month ?? 1
-        return String(format: "%04d%02d01", year, month)
+        let date = cal.date(byAdding: .day, value: -14, to: Date()) ?? Date()
+        let comps = cal.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d%02d%02d", comps.year ?? 2026, comps.month ?? 1, comps.day ?? 1)
     }
 
     static func displayDate(_ dateString: String) -> String {

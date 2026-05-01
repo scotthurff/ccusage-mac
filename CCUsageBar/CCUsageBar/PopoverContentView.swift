@@ -111,7 +111,7 @@ struct PopoverContentView: View {
 
     private var monthlyTotalSection: some View {
         HStack {
-            Text("\(appState.currentMonthName) Total".uppercased())
+            Text("Last 14 Days".uppercased())
                 .font(.subheadline.weight(.medium))
             Spacer()
             VStack(alignment: .trailing, spacing: 1) {
