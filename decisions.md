@@ -60,6 +60,12 @@
 
 **Why**: Without a timeout, a hung ccusage process (network issue, filesystem lock) would silently block all future refreshes forever.
 
+## 2026-04-30: Shrink --since window from full month to 14 days
+
+**Decision**: Pass `--since <14 days ago>` instead of `--since <1st of current month>` when invoking ccusage.
+
+**Why**: ccusage hangs indefinitely on multi-week ranges (reproduced from terminal, not just from the app — tested ranges as small as 10 days hang past 30s, while 1-day ranges return in ~1s). With our 30s process timeout, every refresh silently failed, leaving the popover stuck on whatever the last successful refresh captured. The popover only shows the last 7 days anyway; 14 gives a small buffer without re-entering ccusage's slow path. Renamed the bottom row from "<Month> Total" to "Last 14 Days" to match.
+
 ## 2026-04-07: Render menu bar label as NSImage, not SwiftUI Text
 
 **Decision**: Use `NSImage` rendering with `NSFont.monospacedSystemFont(ofSize: 11, weight: .medium)` for the menu bar label instead of SwiftUI `Text` views.
