@@ -96,7 +96,7 @@ actor CodexLimitsReader {
         }
 
         guard fiveHour != nil || weekly != nil else { return nil }
-        return ProviderLimits(fiveHour: fiveHour, weekly: weekly, fetchedAt: Date())
+        return ProviderLimits(fiveHour: fiveHour, weekly: weekly, scopedWeekly: nil, fetchedAt: Date())
     }
 
     private static func parseISO8601(_ string: String) -> Date? {

@@ -1,5 +1,11 @@
 # Decisions
 
+## 2026-07-02: Per-model weekly caps as their own limits rows
+
+**Decision**: Parse `weekly_scoped` entries from the usage endpoint's `limits[]` array (percent, reset, `scope.model.display_name`) and render each as its own row between CLAUDE and CODEX — weekly gauge only, aligned with the wk column. Scoped caps join the menu bar hottest-limit calculation with a first-two-letters hint (Fable → FA).
+
+**Why**: The Fable weekly cap runs ~2x hotter than the all-models weekly, making it the binding Claude constraint; hiding it made the app's numbers look wrong next to /usage. Parsing the array generically (rather than hardcoding Fable) tracks whatever scoped caps the account exposes. Originally scoped out of v1; added same-day on real use.
+
 ## 2026-07-02: Provider split derived from the existing single ccusage call
 
 **Decision**: Split each day's bar into Claude/Codex/other segments by classifying `modelBreakdowns` model names (`claude-*` → Claude, `gpt-*` → Codex, else other) instead of invoking `ccusage claude daily` + `ccusage codex daily` separately.

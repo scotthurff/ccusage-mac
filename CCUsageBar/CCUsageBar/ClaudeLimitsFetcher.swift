@@ -56,7 +56,30 @@ actor ClaudeLimitsFetcher {
             Self.logger.error("Usage response missing five_hour and seven_day")
             return nil
         }
-        return ProviderLimits(fiveHour: fiveHour, weekly: weekly, fetchedAt: Date())
+        return ProviderLimits(
+            fiveHour: fiveHour,
+            weekly: weekly,
+            scopedWeekly: parseScopedLimits(obj["limits"]),
+            fetchedAt: Date()
+        )
+    }
+
+    // Per-model weekly caps (e.g. Fable) from the `limits[]` array:
+    // {kind: "weekly_scoped", percent, resets_at, scope.model.display_name}
+    private static func parseScopedLimits(_ value: Any?) -> [ScopedLimit]? {
+        guard let entries = value as? [[String: Any]] else { return nil }
+        let scoped: [ScopedLimit] = entries.compactMap { entry in
+            guard entry["kind"] as? String == "weekly_scoped",
+                  let percent = entry["percent"] as? Double,
+                  let scope = entry["scope"] as? [String: Any],
+                  let model = scope["model"] as? [String: Any],
+                  let name = model["display_name"] as? String, !name.isEmpty else {
+                return nil
+            }
+            let resetsAt = (entry["resets_at"] as? String).flatMap(parseISO8601)
+            return ScopedLimit(name: name, window: LimitWindow(usedPercent: percent, resetsAt: resetsAt))
+        }
+        return scoped.isEmpty ? nil : scoped
     }
 
     private static func parseWindow(_ value: Any?) -> LimitWindow? {

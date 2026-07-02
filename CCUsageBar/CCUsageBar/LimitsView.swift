@@ -18,6 +18,9 @@ struct LimitsView: View {
                 }
             } else {
                 providerRow("CLAUDE", limits: appState.claudeLimits, color: Provider.claude.color)
+                ForEach(appState.claudeLimits?.scopedWeekly ?? [], id: \.name) { scoped in
+                    scopedRow(scoped)
+                }
                 providerRow("CODEX", limits: appState.codexLimits, color: Provider.codex.color)
             }
         }
@@ -33,6 +36,20 @@ struct LimitsView: View {
                 .frame(width: 50, alignment: .leading)
             gauge(label: "5h", window: limits?.fiveHour, color: color, weekly: false)
             gauge(label: "wk", window: limits?.weekly, color: color, weekly: true)
+        }
+    }
+
+    // Per-model weekly cap (e.g. FABLE): weekly gauge only, aligned with the
+    // wk column; no 5h slot because no such window exists for scoped limits.
+    private func scopedRow(_ limit: ScopedLimit) -> some View {
+        HStack(spacing: 8) {
+            Text(limit.name.uppercased())
+                .font(.caption2.weight(.medium))
+                .foregroundStyle(.secondary)
+                .frame(width: 50, alignment: .leading)
+            Color.clear
+                .frame(maxWidth: .infinity, maxHeight: 1)
+            gauge(label: "wk", window: limit.window, color: Provider.claude.color, weekly: true)
         }
     }
 

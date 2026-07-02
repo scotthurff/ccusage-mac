@@ -119,16 +119,23 @@ class AppState: ObservableObject {
         claudeLimits != nil || codexLimits != nil
     }
 
-    // Hottest of the four gauges, expiry-adjusted via the shared gate.
-    var hottestLimit: (provider: Provider, percent: Double)? {
-        let candidates: [(Provider, LimitWindow?)] = [
-            (.claude, claudeLimits?.fiveHour), (.claude, claudeLimits?.weekly),
-            (.codex, codexLimits?.fiveHour), (.codex, codexLimits?.weekly)
+    // Hottest gauge across providers and scoped model caps, expiry-adjusted
+    // via the shared gate. Hint: CL/CX for providers, first two letters for
+    // scoped models (Fable → FA).
+    var hottestLimit: (hint: String, percent: Double)? {
+        var candidates: [(String, LimitWindow?)] = [
+            (Provider.claude.menuBarHint, claudeLimits?.fiveHour),
+            (Provider.claude.menuBarHint, claudeLimits?.weekly),
+            (Provider.codex.menuBarHint, codexLimits?.fiveHour),
+            (Provider.codex.menuBarHint, codexLimits?.weekly)
         ]
+        for scoped in claudeLimits?.scopedWeekly ?? [] {
+            candidates.append((String(scoped.name.uppercased().prefix(2)), scoped.window))
+        }
         return candidates
-            .compactMap { provider, window in window.map { (provider, $0.effectivePercent) } }
+            .compactMap { hint, window in window.map { (hint, $0.effectivePercent) } }
             .max { $0.1 < $1.1 }
-            .map { (provider: $0.0, percent: $0.1) }
+            .map { (hint: $0.0, percent: $0.1) }
     }
 
     var limitWarningActive: Bool {
@@ -139,7 +146,7 @@ class AppState: ObservableObject {
     // when cost missing, existing "--" when neither.
     var menuBarLabel: String {
         let limitPart = hottestLimit.map { hottest in
-            "\(hottest.provider.menuBarHint) \(Int(hottest.percent.rounded()))%"
+            "\(hottest.hint) \(Int(hottest.percent.rounded()))%"
         }
         if let cost = todayCost {
             if let limitPart {

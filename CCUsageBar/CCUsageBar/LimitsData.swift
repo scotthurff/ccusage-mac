@@ -18,8 +18,15 @@ struct LimitWindow: Codable {
     }
 }
 
+// Per-model weekly cap (e.g. Fable) from the endpoint's `limits[]` array.
+struct ScopedLimit: Codable {
+    let name: String
+    let window: LimitWindow
+}
+
 struct ProviderLimits: Codable {
     let fiveHour: LimitWindow?
     let weekly: LimitWindow?
+    var scopedWeekly: [ScopedLimit]?
     let fetchedAt: Date
 }
