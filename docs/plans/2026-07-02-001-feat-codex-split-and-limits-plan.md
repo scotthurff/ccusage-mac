@@ -1,7 +1,7 @@
 ---
 title: "feat: Codex provider split + usage limit portrait"
 type: feat
-status: active
+status: complete
 date: 2026-07-02
 origin: docs/brainstorms/2026-07-02-codex-and-limits-requirements.md
 ---

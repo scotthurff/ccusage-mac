@@ -1,5 +1,17 @@
 # Decisions
 
+## Deferred polish (from 2026-07-02 review; not yet built)
+
+- **Weekly reset weekday is ambiguous within 24h**: `wk 94% ·Mon` rendered on a Monday could mean hours or a week away. Fix: switch the weekly reset to clock time when it's within the next 24 hours.
+- **Codex gauges are local-snapshot only**: they reflect the last local Codex turn, while the limits are account-wide. If Codex ever runs on another machine (e.g. the OpenClaw box), the gauges understate — and an expired local window shows a confident 0% that may be wrong. Consider a snapshot-age indicator past ~1h.
+- **Hardcoded `claude-code/2.0.0` User-Agent will age**: if Claude gauges ever silently blank (429s in the log), bump the version string in ClaudeLimitsFetcher first.
+
+## 2026-07-02: Fable sub-slice in the stacked bars
+
+**Decision**: The Claude block in each day bar splits into standard orange (non-Fable Claude models) and a deeper burnt orange for `claude-fable-*` cost. The FABLE limits gauge uses the same deep shade.
+
+**Why**: Fable dominates Claude spend and has its own weekly cap; giving its slice a shade ties the bar to the FABLE limits row (color-consistency rule).
+
 ## 2026-07-02: Per-model weekly caps as their own limits rows
 
 **Decision**: Parse `weekly_scoped` entries from the usage endpoint's `limits[]` array (percent, reset, `scope.model.display_name`) and render each as its own row between CLAUDE and CODEX — weekly gauge only, aligned with the wk column. Scoped caps join the menu bar hottest-limit calculation with a first-two-letters hint (Fable → FA).
