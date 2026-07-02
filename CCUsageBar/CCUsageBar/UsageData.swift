@@ -5,6 +5,18 @@ struct UsageResponse: Codable {
     let totals: UsageTotals
 }
 
+enum Provider: CaseIterable {
+    case claude
+    case codex
+    case other
+
+    static func classify(modelName: String) -> Provider {
+        if modelName.hasPrefix("claude") { return .claude }
+        if modelName.hasPrefix("gpt") { return .codex }
+        return .other
+    }
+}
+
 struct DailyUsage: Codable, Identifiable {
     var id: String { date }
     let date: String
@@ -23,6 +35,12 @@ struct DailyUsage: Codable, Identifiable {
     let totalCost: Double
     let modelsUsed: [String]
     let modelBreakdowns: [ModelBreakdown]
+
+    func cost(for provider: Provider) -> Double {
+        modelBreakdowns
+            .filter { Provider.classify(modelName: $0.modelName) == provider }
+            .reduce(0) { $0 + $1.cost }
+    }
 }
 
 struct ModelBreakdown: Codable, Identifiable {

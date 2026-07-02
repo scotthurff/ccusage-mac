@@ -13,6 +13,10 @@
 		A10004 /* CCUsageRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10004; };
 		A10005 /* PopoverContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10005; };
 		A10006 /* FooterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10006; };
+		A10007 /* LimitsData.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10009; };
+		A10008 /* CodexLimitsReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10010; };
+		A10009 /* ClaudeLimitsFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10011; };
+		A10010 /* LimitsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10012; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -22,6 +26,10 @@
 		B10004 /* CCUsageRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CCUsageRunner.swift; sourceTree = "<group>"; };
 		B10005 /* PopoverContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopoverContentView.swift; sourceTree = "<group>"; };
 		B10006 /* FooterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FooterView.swift; sourceTree = "<group>"; };
+		B10009 /* LimitsData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LimitsData.swift; sourceTree = "<group>"; };
+		B10010 /* CodexLimitsReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexLimitsReader.swift; sourceTree = "<group>"; };
+		B10011 /* ClaudeLimitsFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeLimitsFetcher.swift; sourceTree = "<group>"; };
+		B10012 /* LimitsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LimitsView.swift; sourceTree = "<group>"; };
 		B10007 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B10008 /* CCUsageBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CCUsageBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -54,6 +62,10 @@
 				B10004 /* CCUsageRunner.swift */,
 				B10005 /* PopoverContentView.swift */,
 				B10006 /* FooterView.swift */,
+				B10009 /* LimitsData.swift */,
+				B10010 /* CodexLimitsReader.swift */,
+				B10011 /* ClaudeLimitsFetcher.swift */,
+				B10012 /* LimitsView.swift */,
 				B10007 /* Info.plist */,
 			);
 			path = CCUsageBar;
@@ -125,6 +137,10 @@
 				A10004 /* CCUsageRunner.swift in Sources */,
 				A10005 /* PopoverContentView.swift in Sources */,
 				A10006 /* FooterView.swift in Sources */,
+				A10007 /* LimitsData.swift in Sources */,
+				A10008 /* CodexLimitsReader.swift in Sources */,
+				A10009 /* ClaudeLimitsFetcher.swift in Sources */,
+				A10010 /* LimitsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

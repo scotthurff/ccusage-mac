@@ -10,8 +10,13 @@ class AppState: ObservableObject {
     @Published var isLoading = false
     @Published var lastRefresh: Date?
     @Published var errorMessage: String?
+    @Published var claudeLimits: ProviderLimits?
+    @Published var codexLimits: ProviderLimits?
+    @Published var hasAttemptedLimitsFetch = false
 
     private let runner = CCUsageRunner()
+    private let codexReader = CodexLimitsReader()
+    private let claudeFetcher = ClaudeLimitsFetcher()
     private var refreshTask: Task<Void, Never>?
 
     var todayCostLabel: String {
@@ -73,8 +78,27 @@ class AppState: ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
-        let since = Self.sinceDateString()
+        // Fan out concurrently; each source fails independently.
+        async let usage: Void = refreshUsage()
+        async let claude = claudeFetcher.fetchLimits()
+        async let codex = codexReader.fetchLimits()
 
+        // Failure policy: hold last-known values — only overwrite on success.
+        // `--` appears only before the first-ever success (no cache, no fetch).
+        if let claude = await claude {
+            claudeLimits = claude
+            saveLimitsCache(claude, key: "cachedClaudeLimits")
+        }
+        if let codex = await codex {
+            codexLimits = codex
+            saveLimitsCache(codex, key: "cachedCodexLimits")
+        }
+        hasAttemptedLimitsFetch = true
+        await usage
+    }
+
+    private func refreshUsage() async {
+        let since = Self.sinceDateString()
         do {
             let response = try await runner.fetchUsage(since: since)
             dailyData = response.daily
@@ -89,6 +113,45 @@ class AppState: ObservableObject {
         }
     }
 
+    // MARK: - Limits
+
+    var hasLimitsData: Bool {
+        claudeLimits != nil || codexLimits != nil
+    }
+
+    // Max of the four gauges, expiry-adjusted via the shared gate.
+    var hottestLimitPercent: Double? {
+        let windows = [
+            claudeLimits?.fiveHour, claudeLimits?.weekly,
+            codexLimits?.fiveHour, codexLimits?.weekly
+        ].compactMap { $0 }
+        guard !windows.isEmpty else { return nil }
+        return windows.map(\.effectivePercent).max()
+    }
+
+    var limitWarningActive: Bool {
+        (hottestLimitPercent ?? 0) >= 80
+    }
+
+    // Menu bar: "$80 · 62%" — cost-only when limits unavailable, %-only when
+    // cost missing, existing "--" when neither.
+    var menuBarLabel: String {
+        let limitPart = hottestLimitPercent.map { "\(Int($0.rounded()))%" }
+        if let cost = todayCost {
+            if let limitPart {
+                return "$\(Int(cost.rounded())) · \(limitPart)"
+            }
+            return todayCostLabel
+        }
+        return limitPart ?? "--"
+    }
+
+    private var todayCost: Double? {
+        guard hasData else { return nil }
+        let todayStr = Self.todayDateString()
+        return dailyData.last(where: { $0.date == todayStr })?.totalCost ?? 0
+    }
+
     private func startRefreshLoop() {
         refreshTask = Task { [weak self] in
             while !Task.isCancelled {
@@ -101,15 +164,29 @@ class AppState: ObservableObject {
     // MARK: - Cache
 
     private func loadCache() {
-        guard let data = UserDefaults.standard.data(forKey: "cachedUsageResponse") else { return }
-        do {
-            let response = try JSONDecoder().decode(UsageResponse.self, from: data)
-            dailyData = response.daily
-            totals = response.totals
-            lastRefresh = UserDefaults.standard.object(forKey: "cacheTimestamp") as? Date
-            Self.logger.info("Loaded cache: \(response.daily.count) days")
-        } catch {
-            Self.logger.error("Cache decode failed: \(error)")
+        if let data = UserDefaults.standard.data(forKey: "cachedUsageResponse") {
+            do {
+                let response = try JSONDecoder().decode(UsageResponse.self, from: data)
+                dailyData = response.daily
+                totals = response.totals
+                lastRefresh = UserDefaults.standard.object(forKey: "cacheTimestamp") as? Date
+                Self.logger.info("Loaded cache: \(response.daily.count) days")
+            } catch {
+                Self.logger.error("Cache decode failed: \(error)")
+            }
+        }
+        claudeLimits = loadLimitsCache(key: "cachedClaudeLimits")
+        codexLimits = loadLimitsCache(key: "cachedCodexLimits")
+    }
+
+    private func loadLimitsCache(key: String) -> ProviderLimits? {
+        guard let data = UserDefaults.standard.data(forKey: key) else { return nil }
+        return try? JSONDecoder().decode(ProviderLimits.self, from: data)
+    }
+
+    private func saveLimitsCache(_ limits: ProviderLimits, key: String) {
+        if let data = try? JSONEncoder().encode(limits) {
+            UserDefaults.standard.set(data, forKey: key)
         }
     }
 
