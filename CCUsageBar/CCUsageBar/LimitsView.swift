@@ -49,6 +49,7 @@ struct LimitsView: View {
                     Text("·\(Self.formatReset(reset, weekly: weekly))")
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
+                        .fixedSize()
                 }
             } else {
                 Text("--")
