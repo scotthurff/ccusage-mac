@@ -8,6 +8,9 @@ extension Provider {
         case .other: return Color.gray
         }
     }
+
+    // Deeper shade of Claude orange for the Fable sub-slice
+    static let fableColor = Color(red: 0.63, green: 0.28, blue: 0.13)
 }
 
 struct PopoverContentView: View {
@@ -107,13 +110,18 @@ struct PopoverContentView: View {
                         ? day.totalCost / appState.maxDailyCost
                         : 0
                     let barWidth = max(4, geo.size.width * fraction)
+                    let segments: [(color: Color, cost: Double)] = [
+                        (Provider.claude.color, day.cost(for: .claude) - day.fableCost),
+                        (Provider.fableColor, day.fableCost),
+                        (Provider.codex.color, day.cost(for: .codex)),
+                        (Provider.other.color, day.cost(for: .other))
+                    ]
                     HStack(spacing: 0) {
-                        ForEach(Provider.allCases, id: \.self) { provider in
-                            let cost = day.cost(for: provider)
-                            let segmentWidth = barWidth * cost / day.totalCost
+                        ForEach(Array(segments.enumerated()), id: \.offset) { _, segment in
+                            let segmentWidth = barWidth * segment.cost / day.totalCost
                             if segmentWidth >= 1 {
                                 Rectangle()
-                                    .fill(provider.color)
+                                    .fill(segment.color)
                                     .frame(width: segmentWidth)
                             }
                         }

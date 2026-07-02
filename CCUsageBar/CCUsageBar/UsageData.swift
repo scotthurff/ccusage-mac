@@ -49,6 +49,13 @@ struct DailyUsage: Codable, Identifiable {
             .filter { Provider.classify(modelName: $0.modelName) == provider }
             .reduce(0) { $0 + $1.cost }
     }
+
+    // Fable sub-slice of the Claude cost, for its own bar shade
+    var fableCost: Double {
+        modelBreakdowns
+            .filter { $0.modelName.hasPrefix("claude-fable") }
+            .reduce(0) { $0 + $1.cost }
+    }
 }
 
 struct ModelBreakdown: Codable, Identifiable {

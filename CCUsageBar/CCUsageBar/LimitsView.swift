@@ -49,7 +49,7 @@ struct LimitsView: View {
                 .frame(width: 50, alignment: .leading)
             Color.clear
                 .frame(maxWidth: .infinity, maxHeight: 1)
-            gauge(label: "wk", window: limit.window, color: Provider.claude.color, weekly: true)
+            gauge(label: "wk", window: limit.window, color: Provider.fableColor, weekly: true)
         }
     }
 
