@@ -9,6 +9,13 @@ struct DailyUsage: Codable, Identifiable {
     var id: String { date }
     let date: String
     let inputTokens: Int
+
+    // ccusage v20 renamed "date" to "period" in daily JSON output
+    enum CodingKeys: String, CodingKey {
+        case date = "period"
+        case inputTokens, outputTokens, cacheCreationTokens, cacheReadTokens
+        case totalTokens, totalCost, modelsUsed, modelBreakdowns
+    }
     let outputTokens: Int
     let cacheCreationTokens: Int
     let cacheReadTokens: Int

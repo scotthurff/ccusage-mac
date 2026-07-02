@@ -1,5 +1,11 @@
 # Decisions
 
+## 2026-06-09: Require ccusage v20+, map "period" JSON key to date
+
+**Decision**: Upgraded the global ccusage CLI from 17.1.6 to 20.0.9 and added a `CodingKeys` mapping in `DailyUsage` so the `date` property decodes from v20's renamed `period` key.
+
+**Why**: ccusage 17.x had no pricing entry for `claude-fable-5`, so Fable 5 usage decoded with cost $0.00 — invisible in the cost-based bars and totals even though its tokens were counted. v20 prices Fable correctly, but it also renamed `date` → `period` in the daily JSON, which would have broken the app's decoder (decode failure → "Couldn't load data"). Side effect: the app's own cache now encodes `period` too, so a cache written by the old build fails to decode once on first launch and is replaced after the first successful refresh.
+
 ## 2026-04-07: Flat file structure, no subdirectories
 
 **Decision**: Keep all Swift files flat in the CCUsageBar/ directory. No Models/, Services/, or Views/ folders.
