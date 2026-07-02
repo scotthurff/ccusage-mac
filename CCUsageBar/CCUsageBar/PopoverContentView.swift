@@ -1,10 +1,22 @@
 import SwiftUI
 
+extension Provider {
+    var color: Color {
+        switch self {
+        case .claude: return Color(red: 0.85, green: 0.45, blue: 0.25)
+        case .codex: return Color(red: 0.25, green: 0.58, blue: 0.65)
+        case .other: return Color.gray
+        }
+    }
+}
+
 struct PopoverContentView: View {
     @EnvironmentObject var appState: AppState
 
     var body: some View {
         VStack(spacing: 0) {
+            LimitsView()
+            Divider()
             dailyListSection
                 .padding(.top, 8)
                 .padding(.bottom, 8)
@@ -13,7 +25,7 @@ struct PopoverContentView: View {
             Divider()
             FooterView()
         }
-        .frame(width: 320)
+        .frame(width: 360)
         .fontDesign(.monospaced)
     }
 
@@ -85,12 +97,29 @@ struct PopoverContentView: View {
                 .frame(width: 70, alignment: .leading)
 
             GeometryReader { geo in
-                let fraction = appState.maxDailyCost > 0
-                    ? day.totalCost / appState.maxDailyCost
-                    : 0
-                RoundedRectangle(cornerRadius: 3)
-                    .fill(Color(red: 0.85, green: 0.45, blue: 0.25))
-                    .frame(width: max(4, geo.size.width * fraction))
+                if day.totalCost <= 0 {
+                    // Zero-cost day: keep the original single min-width bar
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(Color.gray.opacity(0.4))
+                        .frame(width: 4)
+                } else {
+                    let fraction = appState.maxDailyCost > 0
+                        ? day.totalCost / appState.maxDailyCost
+                        : 0
+                    let barWidth = max(4, geo.size.width * fraction)
+                    HStack(spacing: 0) {
+                        ForEach(Provider.allCases, id: \.self) { provider in
+                            let cost = day.cost(for: provider)
+                            let segmentWidth = barWidth * cost / day.totalCost
+                            if segmentWidth >= 1 {
+                                Rectangle()
+                                    .fill(provider.color)
+                                    .frame(width: segmentWidth)
+                            }
+                        }
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 3))
+                }
             }
             .frame(height: 12)
 

@@ -5,10 +5,37 @@ struct UsageResponse: Codable {
     let totals: UsageTotals
 }
 
+enum Provider: CaseIterable {
+    case claude
+    case codex
+    case other
+
+    static func classify(modelName: String) -> Provider {
+        if modelName.hasPrefix("claude") { return .claude }
+        if modelName.hasPrefix("gpt") { return .codex }
+        return .other
+    }
+
+    var menuBarHint: String {
+        switch self {
+        case .claude: return "CL"
+        case .codex: return "CX"
+        case .other: return "??"
+        }
+    }
+}
+
 struct DailyUsage: Codable, Identifiable {
     var id: String { date }
     let date: String
     let inputTokens: Int
+
+    // ccusage v20 renamed "date" to "period" in daily JSON output
+    enum CodingKeys: String, CodingKey {
+        case date = "period"
+        case inputTokens, outputTokens, cacheCreationTokens, cacheReadTokens
+        case totalTokens, totalCost, modelsUsed, modelBreakdowns
+    }
     let outputTokens: Int
     let cacheCreationTokens: Int
     let cacheReadTokens: Int
@@ -16,6 +43,12 @@ struct DailyUsage: Codable, Identifiable {
     let totalCost: Double
     let modelsUsed: [String]
     let modelBreakdowns: [ModelBreakdown]
+
+    func cost(for provider: Provider) -> Double {
+        modelBreakdowns
+            .filter { Provider.classify(modelName: $0.modelName) == provider }
+            .reduce(0) { $0 + $1.cost }
+    }
 }
 
 struct ModelBreakdown: Codable, Identifiable {

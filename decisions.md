@@ -1,5 +1,47 @@
 # Decisions
 
+## 2026-07-02: Provider split derived from the existing single ccusage call
+
+**Decision**: Split each day's bar into Claude/Codex/other segments by classifying `modelBreakdowns` model names (`claude-*` → Claude, `gpt-*` → Codex, else other) instead of invoking `ccusage claude daily` + `ccusage codex daily` separately.
+
+**Why**: ccusage v20's plain `daily` already aggregates all agents — Codex was silently blended into every bar. One process instead of two avoids schema drift between subcommands (claude uses `period`/`totalCost`, codex uses `date`/`costUSD`) and keeps totals internally consistent. Provider colors (Claude orange, Codex teal, other gray) repeat between bars and limits rows, so no legend.
+
+## 2026-07-02: Official rate-limit percentages — Codex from session files, Claude from the OAuth usage endpoint
+
+**Decision**: Codex 5h/weekly limits parse from the newest `rate_limits` event in `~/.codex/sessions/YYYY/MM/DD/*.jsonl` (both `resets_at` epoch and `resets_in_seconds` variants; windows classified by `window_minutes` magnitude, not equality). Claude limits come from `GET api.anthropic.com/api/oauth/usage` using the Claude Code OAuth token read via `/usr/bin/security find-generic-password` (fallback `~/.claude/.credentials.json`). This is the app's first network call. The `User-Agent: claude-code/<ver>` header is required — omitting it causes persistent 429s.
+
+**Why**: Both sources carry official account-wide percentages (matching `codex` status and Claude Code's `/usage`) versus token-count estimation, which is approximate and single-machine. The `security` CLI reads the keychain item without an ACL prompt; a native SecItem call from a foreign app would trigger one. The token lives in memory only, is never logged, and the request uses `URLSessionConfiguration.ephemeral` so the Authorization header can never be persisted to the shared URL cache on disk. Expired token → skip the call and wait for Claude Code to refresh it (no refresh flow of our own).
+
+## 2026-07-02: Expiry-zeroing lives in one display-time gate, not the readers
+
+**Decision**: `LimitWindow.effectivePercent`/`effectiveResetsAt` return 0%/nil once the reset time has passed. All consumers (LimitsView, menu bar hottest-%) read through these; readers/fetchers return raw data.
+
+**Why**: Cached snapshots loaded from UserDefaults on relaunch never re-pass through a reader — reader-local zeroing would render a stale hot percentage and fire a false menu-bar warning. One gate covers live fetches, cached snapshots, both providers, and long-open popovers.
+
+## 2026-07-02: Three-state gauge display contract + hold-last-known failure policy
+
+**Decision**: Gauges have three non-live states — loading placeholder on first uncached load, 0% empty gauge for an inactive/reset window (API null or reset passed), `--` per individual missing gauge. On transient fetch failure, hold last-known values; `--` only before the first-ever success.
+
+**Why**: Loading, zero, and broken must never look alike (0% invites work, `--` invites caution). Hold-last-known matches the existing usage-cache behavior and prevents the nightly expired-token 401 from flapping the gauges; staleness is bounded by the expiry gate.
+
+## 2026-07-02: Menu bar label = whole-dollar cost + hottest limit %, warning via icon swap
+
+**Decision**: Label renders `$80 · 62%` (hottest of the four limit gauges). Limits unavailable → existing cost-only label; cost unavailable → percentage alone. At ≥80%, the leading `chart.bar.fill` glyph swaps to `exclamationmark.triangle.fill`, keeping `isTemplate = true`.
+
+**Why**: The hottest limit is the single most actionable number. The icon swap (instead of the plan's inline triangle before the percentage) avoids splitting text runs mid-label while preserving template rendering for light/dark menu bars; same glance signal, simpler drawing.
+
+## 2026-07-02: Still no test target — parsers verified against live data
+
+**Decision**: No XCTest target added. The Codex parser was verified byte-for-byte against the newest real session file and the Claude fetcher end-to-end against the live endpoint on this machine.
+
+**Why**: Repo convention (personal tool, zero ceremony). The defensive branches (hex-decode fallback, `resets_in_seconds` variant) are documented in the plan and exercised only if the wild data shifts.
+
+## 2026-06-09: Require ccusage v20+, map "period" JSON key to date
+
+**Decision**: Upgraded the global ccusage CLI from 17.1.6 to 20.0.9 and added a `CodingKeys` mapping in `DailyUsage` so the `date` property decodes from v20's renamed `period` key.
+
+**Why**: ccusage 17.x had no pricing entry for `claude-fable-5`, so Fable 5 usage decoded with cost $0.00 — invisible in the cost-based bars and totals even though its tokens were counted. v20 prices Fable correctly, but it also renamed `date` → `period` in the daily JSON, which would have broken the app's decoder (decode failure → "Couldn't load data"). Side effect: the app's own cache now encodes `period` too, so a cache written by the old build fails to decode once on first launch and is replaced after the first successful refresh.
+
 ## 2026-04-07: Flat file structure, no subdirectories
 
 **Decision**: Keep all Swift files flat in the CCUsageBar/ directory. No Models/, Services/, or Views/ folders.
