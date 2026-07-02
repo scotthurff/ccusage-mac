@@ -15,6 +15,14 @@ enum Provider: CaseIterable {
         if modelName.hasPrefix("gpt") { return .codex }
         return .other
     }
+
+    var menuBarHint: String {
+        switch self {
+        case .claude: return "CL"
+        case .codex: return "CX"
+        case .other: return "??"
+        }
+    }
 }
 
 struct DailyUsage: Codable, Identifiable {
