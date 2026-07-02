@@ -110,7 +110,7 @@ Plan-local additions:
 
 ## Implementation Units
 
-- [ ] U1. **Provider split in the data layer**
+- [x] U1. **Provider split in the data layer**
 
 **Goal:** Every `DailyUsage` exposes claude/codex/other cost splits derived from its `modelBreakdowns`.
 
@@ -136,7 +136,7 @@ Plan-local additions:
 
 ---
 
-- [ ] U2. **Stacked provider segments in the 7-day bars**
+- [x] U2. **Stacked provider segments in the 7-day bars**
 
 **Goal:** Each day bar renders Claude + Codex (+ other, when present) segments proportional to cost, colors consistent with the limits section.
 
@@ -168,7 +168,7 @@ Plan-local additions:
 
 ---
 
-- [ ] U3. **Codex limits reader**
+- [x] U3. **Codex limits reader**
 
 **Goal:** An actor that returns the latest Codex 5h/weekly limit snapshot from local session rollouts.
 
@@ -199,7 +199,7 @@ Plan-local additions:
 
 ---
 
-- [ ] U4. **Claude limits fetcher**
+- [x] U4. **Claude limits fetcher**
 
 **Goal:** Fetch official Claude 5h/weekly utilization via the OAuth usage endpoint using the locally stored Claude Code token.
 
@@ -229,7 +229,7 @@ Plan-local additions:
 
 ---
 
-- [ ] U5. **Limits state in AppState + limits section UI**
+- [x] U5. **Limits state in AppState + limits section UI**
 
 **Goal:** Popover renders the approved two-row limits portrait at the top, refreshed on the existing cadence, cached for instant relaunch display.
 
@@ -265,7 +265,7 @@ Plan-local additions:
 
 ---
 
-- [ ] U6. **Menu bar label: cost + hottest limit, warning state**
+- [x] U6. **Menu bar label: cost + hottest limit, warning state**
 
 **Goal:** Menu bar shows `$80 · 62%` (whole-dollar today cost + hottest limit) with a template-safe warning at ≥80%.
 
