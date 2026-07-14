@@ -118,11 +118,12 @@ struct PopoverContentView: View {
                     ]
                     HStack(spacing: 0) {
                         ForEach(Array(segments.enumerated()), id: \.offset) { _, segment in
-                            let segmentWidth = barWidth * segment.cost / day.totalCost
-                            if segmentWidth >= 1 {
+                            // Any nonzero spend stays visible: min 3pt, matching
+                            // the whole-bar min-width treatment on zero days
+                            if segment.cost > 0 {
                                 Rectangle()
                                     .fill(segment.color)
-                                    .frame(width: segmentWidth)
+                                    .frame(width: max(3, barWidth * segment.cost / day.totalCost))
                             }
                         }
                     }
