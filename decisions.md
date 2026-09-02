@@ -6,6 +6,12 @@
 - **Codex gauges are local-snapshot only**: they reflect the last local Codex turn, while the limits are account-wide. If Codex ever runs on another machine (e.g. the OpenClaw box), the gauges understate — and an expired local window shows a confident 0% that may be wrong. Consider a snapshot-age indicator past ~1h.
 - **Hardcoded `claude-code/2.0.0` User-Agent will age**: if Claude gauges ever silently blank (429s in the log), bump the version string in ClaudeLimitsFetcher first.
 
+## 2026-09-01: Fable 5.1 pricing pinned in a ccusage config override
+
+**Decision**: Pin `claude-fable-5-1` pricing in `~/.config/claude/ccusage.json` under `defaults.pricingOverrides`, using Anthropic's published rates: input $10/M, output $50/M, cache write $12.50/M, cache read $0.25/M. No app code changed. The Fable sub-slice already matches any model name starting with `claude-fable`, and the FABLE limits row comes from the generic `limits[]` parsing; the endpoint reports one scoped "Fable" cap that covers the whole family.
+
+**Why**: ccusage prices from LiteLLM's live table when online. When that fetch fails it silently falls back to a price snapshot embedded in its binary, with nothing on stderr. Neither the installed 20.0.9 nor the latest 20.0.20 (Aug 15) embeds `claude-fable-5-1`, so a refresh during a network blip would report Fable 5.1 at $0.00 and the app would cache it. Upgrading ccusage does not help this time (unlike the July 2 Fable 5 fix). A config override wins over the live table, so it also guards against upstream edits. Verified: online with the override, online without it, and offline with it all produce the same Fable 5.1 cost. One ccusage quirk worth knowing: under an override, 1-hour cache writes are charged at twice `inputCostPerToken` ($20/M, the same as LiteLLM's `above_1hr` rate), and `cacheCreationInputTokenCost` only covers 5-minute cache writes. Claude Code currently writes 1-hour cache entries only. Trade-off: if Anthropic changes Fable 5.1 prices, this file must be edited by hand.
+
 ## 2026-07-02: Fable sub-slice in the stacked bars
 
 **Decision**: The Claude block in each day bar splits into standard orange (non-Fable Claude models) and a deeper burnt orange for `claude-fable-*` cost. The FABLE limits gauge uses the same deep shade.

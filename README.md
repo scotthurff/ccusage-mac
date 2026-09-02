@@ -21,6 +21,26 @@ Install ccusage:
 npm install -g ccusage
 ```
 
+Pin pricing for any model newer than the price snapshot embedded in ccusage, so cost stays correct when its live price fetch fails. Create `~/.config/claude/ccusage.json`:
+
+```json
+{
+  "$schema": "https://ccusage.com/config-schema.json",
+  "defaults": {
+    "pricingOverrides": {
+      "claude-fable-5-1": {
+        "inputCostPerToken": 0.00001,
+        "outputCostPerToken": 0.00005,
+        "cacheCreationInputTokenCost": 0.0000125,
+        "cacheReadInputTokenCost": 0.00000025
+      }
+    }
+  }
+}
+```
+
+ccusage 20.0.9 and newer reads this file on its own. See `decisions.md` (2026-09-01) for why an upgrade alone does not cover it.
+
 ## Build
 
 ```sh
