@@ -1,18 +1,36 @@
+import CloudKit
 import SwiftUI
 import WidgetKit
 
 @main
 struct CCUsagePhoneApp: App {
+    @StateObject private var state = PhoneState(
+        cache: .appGroup(),
+        fetchLatest: { await CloudQuotaStore().fetchLatest() },
+        checkAccount: { await CloudAccountIdentity.current() },
+        reloadWidgets: { WidgetCenter.shared.reloadAllTimelines() })
+    @Environment(\.scenePhase) private var scenePhase
+
     var body: some Scene {
         WindowGroup {
-            PreviewScreen()
+            ContentView(state: state)
+                .task { await state.refresh() }
+                .onOpenURL { state.open($0) }
+                .onReceive(NotificationCenter.default.publisher(for: .CKAccountChanged).receive(on: RunLoop.main)) { _ in
+                    Task { await state.accountChanged() }
+                }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { Task { await state.refresh() } }
         }
     }
 }
 
 // Shows the widget at each Home Screen size, using the preview readings.
-// Replaced by the real companion screens once iCloud delivery exists.
+// Opened from the details screen's "Widget preview" button.
 struct PreviewScreen: View {
+    @Environment(\.dismiss) private var dismiss
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -25,6 +43,11 @@ struct PreviewScreen: View {
                 .padding()
             }
             .navigationTitle("CCUsage")
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
         }
     }
 }
