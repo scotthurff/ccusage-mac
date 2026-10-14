@@ -6,6 +6,12 @@
 - **Codex gauges are local-snapshot only**: they reflect the last local Codex turn, while the limits are account-wide. If Codex ever runs on another machine (e.g. the OpenClaw box), the gauges understate — and an expired local window shows a confident 0% that may be wrong. Consider a snapshot-age indicator past ~1h.
 - **Hardcoded `claude-code/2.0.0` User-Agent will age**: if Claude gauges ever silently blank (429s in the log), bump the version string in ClaudeLimitsFetcher first.
 
+## 2026-10-14: Codex reset credits and credit balance on the widget; medium size, always dark
+
+**Decision**: The widget also shows Codex's "Full reset" credits (count and next expiry) and its credit balance, under the Codex section. It supports the medium and large Home Screen sizes and is always dark. Scott chose these; he declined a separate "blocked" status and the history stats (daily tokens, lifetime tokens, streaks).
+
+**Why**: Reset credits change how hard Codex can be leaned on, and they expire unused (three on 2026-10-14, the first expiring October 22). `account/rateLimits/read` returns the count even with `excludeResetCreditDetails: true`, but the expiry dates need the detail lookup, so the Mac collector must read with details. The credit unit's dollar value is unknown, so the balance shows as a raw number. This adds to the plan's original capacity scope at Scott's request.
+
 ## 2026-10-14: Widget look built before the iCloud proof
 
 **Decision**: At Scott's request, the large Home Screen widget's real design was built ahead of the signing and iCloud checks. It runs on a fixed sample of real October 14 readings and says "Preview · sample readings, not live" on screen. The temporary iCloud test widget remains as a separate widget, "CCUsage iCloud test", for the device check.

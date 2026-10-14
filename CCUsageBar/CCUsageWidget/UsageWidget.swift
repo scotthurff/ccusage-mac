@@ -21,7 +21,15 @@ struct ProviderReading: Identifiable {
     let tint: Color
     let observedAt: Date
     let windows: [UsageWindow]
+    var resetCredits: ResetCredits? = nil
+    var creditBalance: Double? = nil
     var id: String { name }
+}
+
+// Codex "Full reset" credits: each one resets the limit to zero.
+struct ResetCredits {
+    let available: Int
+    let nextExpiry: Date?
 }
 
 struct UsageEntry: TimelineEntry {
@@ -61,7 +69,9 @@ enum UsagePreview {
             windows: [
                 UsageWindow(id: "codex-wk", label: "Weekly", shortLabel: "Wk", usedPercent: 13,
                             resetsAt: Date(timeIntervalSinceReferenceDate: 814_166_108), weekly: true, tint: UsagePalette.codex),
-            ]
+            ],
+            resetCredits: ResetCredits(available: 3, nextExpiry: Date(timeIntervalSinceReferenceDate: 814_394_460)),
+            creditBalance: 62_493.38
         ),
     ]
 }
@@ -175,7 +185,31 @@ private struct ProviderSection: View {
             ForEach(provider.windows) { window in
                 WindowRow(window: window, providerOutdated: isOutdated, now: now, compact: compact)
             }
+            if provider.resetCredits != nil || provider.creditBalance != nil {
+                VStack(alignment: .leading, spacing: 2) {
+                    if let credits = provider.resetCredits {
+                        Text(resetCreditsText(credits))
+                    }
+                    if let balance = provider.creditBalance {
+                        Text("\(Int(balance).formatted()) credits")
+                    }
+                }
+                .font(compact ? .caption2 : .caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+            }
         }
+    }
+
+    private func resetCreditsText(_ credits: ResetCredits) -> String {
+        let count = credits.available == 1 ? "1 full reset" : "\(credits.available) full resets"
+        guard credits.available > 0, let expiry = credits.nextExpiry else { return count }
+        let soon = expiry.timeIntervalSince(now) < 6 * 24 * 60 * 60
+        let date = soon
+            ? expiry.formatted(.dateTime.weekday(.abbreviated))
+            : expiry.formatted(.dateTime.month(.abbreviated).day())
+        return "\(count) · next expires \(date)"
     }
 
     private var header: some View {
