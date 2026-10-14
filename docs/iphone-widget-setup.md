@@ -34,7 +34,7 @@ They read and write one record, `synthetic-smoke-test`, labeled "SYNTHETIC SMOKE
 Steps once signing works:
 1. Build and sign the Mac app, then run `CCUsageBar.app/Contents/MacOS/CCUsageBar --smoke-check`. It checks the Claude Keychain read, the Codex log read, and the ccusage process, then writes and reads back the record.
 2. Install the phone app on the iPhone. Open it and confirm it shows the Mac's nonce.
-3. Add the large widget. Force-quit the app. Run the Mac check again so a new nonce is written. Remove and re-add the widget, or wait for its refresh. The widget must show the new nonce while the app stays closed.
+3. Add the large "CCUsage iCloud test" widget (not "Claude & Codex limits", which shows preview data). Force-quit the app. Run the Mac check again so a new nonce is written. Remove and re-add the widget, or wait for its refresh. The widget must show the new nonce while the app stays closed.
 4. Sign the phone out of iCloud, or point it at a different environment. It must show a failure, not a reading.
 5. Run `CCUsageBar --smoke-delete` to remove the record.
 

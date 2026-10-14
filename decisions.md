@@ -6,6 +6,12 @@
 - **Codex gauges are local-snapshot only**: they reflect the last local Codex turn, while the limits are account-wide. If Codex ever runs on another machine (e.g. the OpenClaw box), the gauges understate — and an expired local window shows a confident 0% that may be wrong. Consider a snapshot-age indicator past ~1h.
 - **Hardcoded `claude-code/2.0.0` User-Agent will age**: if Claude gauges ever silently blank (429s in the log), bump the version string in ClaudeLimitsFetcher first.
 
+## 2026-10-14: Widget look built before the iCloud proof
+
+**Decision**: At Scott's request, the large Home Screen widget's real design was built ahead of the signing and iCloud checks. It runs on a fixed sample of real October 14 readings and says "Preview · sample readings, not live" on screen. The temporary iCloud test widget remains as a separate widget, "CCUsage iCloud test", for the device check.
+
+**Why**: Scott wanted to see the actual widget while his developer membership processes. The design does not depend on how readings travel, so the risk of rework is low. Reading ages show whole minutes on iOS 18 and later; seconds-level ages were too noisy on the Home Screen.
+
 ## 2026-10-14: Native iPhone widget scope confirmed
 
 **Decision**: Use the [iPhone Usage Widget plan](docs/plans/2026-10-14-0849-feat-iphone-usage-widget-plan.md) as the scope for a personal native iPhone widget and small companion app, fed by private iCloud snapshots from this Mac. OpenClaw integration is deferred. This records the intended direction; implementation has not started.

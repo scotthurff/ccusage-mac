@@ -60,14 +60,21 @@ struct SmokeWidgetView: View {
     }
 }
 
-@main
-struct CCUsageWidget: Widget {
+struct SmokeWidget: Widget {
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: "CCUsageWidget", provider: SmokeProvider()) { entry in
+        StaticConfiguration(kind: "CCUsageSmokeTest", provider: SmokeProvider()) { entry in
             SmokeWidgetView(entry: entry)
         }
-        .configurationDisplayName("CCUsage smoke test")
+        .configurationDisplayName("CCUsage iCloud test")
         .description("Temporary synthetic iCloud check.")
         .supportedFamilies([.systemLarge])
+    }
+}
+
+@main
+struct CCUsageWidgets: WidgetBundle {
+    var body: some Widget {
+        UsageWidget()
+        SmokeWidget()
     }
 }
