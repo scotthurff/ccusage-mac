@@ -6,13 +6,13 @@ Evidence for the plan's first unit (U1): signing, private iCloud delivery, and c
 
 | Check | Status | Evidence |
 | --- | --- | --- |
-| Paid Apple Developer membership signed into Xcode | Not met | 2026-10-14: Apple account now signed into Xcode, but its only paid team has expired. Apple's capability table lists CloudKit for paid members only, not the free tier. Scott chose to renew or enroll as an individual. |
+| Paid Apple Developer membership signed into Xcode | Met | 2026-10-14: team YT4ALW7VT7 active. Xcode created an Apple Development certificate and profiles for all three bundle identifiers through `-allowProvisioningUpdates`. |
 | iOS platform installed in Xcode | Met | 2026-10-14: iOS 26.5 platform and simulators installed |
-| iPhone connected, trusted, Developer Mode on | Partly met | 2026-10-14: paired and connected; Developer Mode off. The switch appears after Xcode first attempts an install. |
+| iPhone connected, trusted, Developer Mode on | Partly met | 2026-10-14: paired and connected. An install attempt was refused because Developer Mode is off; the phone is not yet in the iOS profile because Xcode registers it only on a device build. |
 | Phone iOS version supported by installed Xcode | Met | iPhone on iOS 26.6.2; Xcode 26.6 lists it as a run destination |
-| Signed Mac app writes the synthetic iCloud record, sandbox off | Not run | Needs signing |
+| Signed Mac app writes the synthetic iCloud record, sandbox off | Met | 2026-10-14: signed Release build has the container entitlement and no sandbox key. First write failed with "Bad Container" right after Xcode registered the container; about ten minutes later the write and read-back succeeded. |
 | Phone app and widget read the record, widget with app closed | Not run | Needs signing and device |
-| Mac collectors still work under the new signature | Not run | Needs signing |
+| Mac collectors still work under the new signature | Met | 2026-10-14: smoke check reported the Claude Keychain read, the Codex log read, and the ccusage process all ok under Apple Development signing |
 | Current Codex account limits readable without a model turn | Met | See below |
 | Cloud or remote Codex work moves the live reading | Open | Baseline recorded; waiting for ordinary cloud or remote work |
 
