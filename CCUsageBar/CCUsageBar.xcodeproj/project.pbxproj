@@ -26,6 +26,21 @@
 		A30001 /* CCUsageWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = B30001; };
 		A30002 /* CloudKitSmoke.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40001; };
 		A30003 /* UsageWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = B30005; };
+		A50001 /* QuotaSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50001; };
+		A50002 /* QuotaPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50002; };
+		A50003 /* CloudQuotaStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50003; };
+		A10013 /* QuotaSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40002; };
+		A10014 /* QuotaPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40003; };
+		A10015 /* CloudQuotaStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40004; };
+		A20005 /* QuotaSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40002; };
+		A20006 /* QuotaPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40003; };
+		A20007 /* CloudQuotaStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40004; };
+		A30004 /* QuotaSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40002; };
+		A30005 /* QuotaPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40003; };
+		A30006 /* CloudQuotaStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40004; };
+		A50004 /* QuotaSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40002; };
+		A50005 /* QuotaPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40003; };
+		A50006 /* CloudQuotaStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40004; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -76,6 +91,13 @@
 		B30005 /* UsageWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageWidget.swift; sourceTree = "<group>"; };
 		B30004 /* CCUsageWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CCUsageWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		B40001 /* CloudKitSmoke.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitSmoke.swift; sourceTree = "<group>"; };
+		B50001 /* QuotaSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuotaSnapshotTests.swift; sourceTree = "<group>"; };
+		B50002 /* QuotaPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuotaPresentationTests.swift; sourceTree = "<group>"; };
+		B50003 /* CloudQuotaStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudQuotaStoreTests.swift; sourceTree = "<group>"; };
+		B50004 /* CCUsageSharedTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CCUsageSharedTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B40002 /* QuotaSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuotaSnapshot.swift; sourceTree = "<group>"; };
+		B40003 /* QuotaPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuotaPresentation.swift; sourceTree = "<group>"; };
+		B40004 /* CloudQuotaStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudQuotaStore.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -100,6 +122,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C50001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -110,6 +139,7 @@
 				D20001 /* CCUsagePhone */,
 				D30001 /* CCUsageWidget */,
 				D40001 /* Shared */,
+				D50001 /* CCUsageSharedTests */,
 				D10003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -140,6 +170,7 @@
 				B10008 /* CCUsageBar.app */,
 				B20003 /* CCUsagePhone.app */,
 				B30004 /* CCUsageWidget.appex */,
+				B50004 /* CCUsageSharedTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -168,8 +199,21 @@
 			isa = PBXGroup;
 			children = (
 				B40001 /* CloudKitSmoke.swift */,
+				B40002 /* QuotaSnapshot.swift */,
+				B40003 /* QuotaPresentation.swift */,
+				B40004 /* CloudQuotaStore.swift */,
 			);
 			path = Shared;
+			sourceTree = "<group>";
+		};
+		D50001 /* CCUsageSharedTests */ = {
+			isa = PBXGroup;
+			children = (
+				B50001 /* QuotaSnapshotTests.swift */,
+				B50002 /* QuotaPresentationTests.swift */,
+				B50003 /* CloudQuotaStoreTests.swift */,
+			);
+			path = CCUsageSharedTests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -225,6 +269,22 @@
 			productReference = B30004 /* CCUsageWidget.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		E50001 /* CCUsageSharedTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F50001;
+			buildPhases = (
+				G50001 /* Sources */,
+				C50001 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CCUsageSharedTests;
+			productName = CCUsageSharedTests;
+			productReference = B50004 /* CCUsageSharedTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -251,6 +311,7 @@
 				E10001 /* CCUsageBar */,
 				E20001 /* CCUsagePhone */,
 				E30001 /* CCUsageWidget */,
+				E50001 /* CCUsageSharedTests */,
 			);
 		};
 /* End PBXProject section */
@@ -272,6 +333,9 @@
 				A10010 /* LimitsView.swift in Sources */,
 				A10011 /* MacSmokeCheck.swift in Sources */,
 				A10012 /* CloudKitSmoke.swift in Sources */,
+				A10013 /* QuotaSnapshot.swift in Sources */,
+				A10014 /* QuotaPresentation.swift in Sources */,
+				A10015 /* CloudQuotaStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -282,6 +346,9 @@
 				A20001 /* CCUsagePhoneApp.swift in Sources */,
 				A20002 /* CloudKitSmoke.swift in Sources */,
 				A20004 /* UsageWidget.swift in Sources */,
+				A20005 /* QuotaSnapshot.swift in Sources */,
+				A20006 /* QuotaPresentation.swift in Sources */,
+				A20007 /* CloudQuotaStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -292,6 +359,22 @@
 				A30001 /* CCUsageWidget.swift in Sources */,
 				A30002 /* CloudKitSmoke.swift in Sources */,
 				A30003 /* UsageWidget.swift in Sources */,
+				A30004 /* QuotaSnapshot.swift in Sources */,
+				A30005 /* QuotaPresentation.swift in Sources */,
+				A30006 /* CloudQuotaStore.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		G50001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A50001 /* QuotaSnapshotTests.swift in Sources */,
+				A50002 /* QuotaPresentationTests.swift in Sources */,
+				A50003 /* CloudQuotaStoreTests.swift in Sources */,
+				A50004 /* QuotaSnapshot.swift in Sources */,
+				A50005 /* QuotaPresentation.swift in Sources */,
+				A50006 /* CloudQuotaStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -513,6 +596,40 @@
 			};
 			name = Release;
 		};
+		F50002 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ccusagebar.sharedtests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		F50003 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ccusagebar.sharedtests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -548,6 +665,15 @@
 			buildConfigurations = (
 				F30002 /* Debug */,
 				F30003 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F50001 /* Build configuration list for PBXNativeTarget "CCUsageSharedTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F50002 /* Debug */,
+				F50003 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
