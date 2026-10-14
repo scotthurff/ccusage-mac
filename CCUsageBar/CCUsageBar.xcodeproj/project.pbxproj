@@ -64,6 +64,25 @@
 		A70005 /* QuotaPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40003; };
 		A70006 /* CloudQuotaStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40004; };
 		A70007 /* PhoneSnapshotCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40005; };
+		A10017 /* QuotaPublisher.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10016; };
+		A10018 /* CloudQuotaWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40006; };
+		A60020 /* QuotaPublisherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60005; };
+		A60021 /* QuotaPublisher.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10016; };
+		A60022 /* CloudQuotaWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40006; };
+		A30008 /* QuotaTimelineProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B30006; };
+		A30009 /* QuotaWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B30007; };
+		A30010 /* QuotaPageIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = B30008; };
+		A20011 /* QuotaWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B30007; };
+		A20012 /* QuotaPageIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = B30008; };
+		A80001 /* QuotaTimelineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B80001; };
+		A80002 /* QuotaPagingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B80002; };
+		A80003 /* QuotaTimelineProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B30006; };
+		A80004 /* QuotaWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B30007; };
+		A80005 /* QuotaPageIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = B30008; };
+		A80006 /* QuotaSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40002; };
+		A80007 /* QuotaPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40003; };
+		A80008 /* CloudQuotaStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40004; };
+		A80009 /* PhoneSnapshotCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40005; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -131,6 +150,15 @@
 		B70002 /* PhoneStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneStateTests.swift; sourceTree = "<group>"; };
 		B60004 /* CCUsageBarTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CCUsageBarTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B70004 /* CCUsagePhoneTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CCUsagePhoneTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B10016 /* QuotaPublisher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuotaPublisher.swift; sourceTree = "<group>"; };
+		B40006 /* CloudQuotaWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudQuotaWriter.swift; sourceTree = "<group>"; };
+		B30006 /* QuotaTimelineProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuotaTimelineProvider.swift; sourceTree = "<group>"; };
+		B30007 /* QuotaWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuotaWidgetView.swift; sourceTree = "<group>"; };
+		B30008 /* QuotaPageIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuotaPageIntent.swift; sourceTree = "<group>"; };
+		B60005 /* QuotaPublisherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuotaPublisherTests.swift; sourceTree = "<group>"; };
+		B80001 /* QuotaTimelineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuotaTimelineTests.swift; sourceTree = "<group>"; };
+		B80002 /* QuotaPagingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuotaPagingTests.swift; sourceTree = "<group>"; };
+		B80004 /* CCUsageWidgetTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CCUsageWidgetTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -176,6 +204,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C80001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -189,6 +224,7 @@
 				D50001 /* CCUsageSharedTests */,
 				D60001 /* CCUsageBarTests */,
 				D70001 /* CCUsagePhoneTests */,
+				D80001 /* CCUsageWidgetTests */,
 				D10003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -209,6 +245,7 @@
 				B10007 /* Info.plist */,
 				B10013 /* CCUsageBar.entitlements */,
 				B10015 /* CodexLimitsClient.swift */,
+				B10016 /* QuotaPublisher.swift */,
 			);
 			path = CCUsageBar;
 			sourceTree = "<group>";
@@ -222,6 +259,7 @@
 				B50004 /* CCUsageSharedTests.xctest */,
 				B60004 /* CCUsageBarTests.xctest */,
 				B70004 /* CCUsagePhoneTests.xctest */,
+				B80004 /* CCUsageWidgetTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -244,6 +282,9 @@
 				B30005 /* UsageWidget.swift */,
 				B30003 /* Info.plist */,
 				B30002 /* CCUsageWidget.entitlements */,
+				B30006 /* QuotaTimelineProvider.swift */,
+				B30007 /* QuotaWidgetView.swift */,
+				B30008 /* QuotaPageIntent.swift */,
 			);
 			path = CCUsageWidget;
 			sourceTree = "<group>";
@@ -256,6 +297,7 @@
 				B40003 /* QuotaPresentation.swift */,
 				B40004 /* CloudQuotaStore.swift */,
 				B40005 /* PhoneSnapshotCache.swift */,
+				B40006 /* CloudQuotaWriter.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -276,6 +318,7 @@
 				B60001 /* CodexLimitsClientTests.swift */,
 				B60002 /* ClaudeLimitsFetcherTests.swift */,
 				B60003 /* AppStateQuotaTests.swift */,
+				B60005 /* QuotaPublisherTests.swift */,
 			);
 			path = CCUsageBarTests;
 			sourceTree = "<group>";
@@ -287,6 +330,15 @@
 				B70002 /* PhoneStateTests.swift */,
 			);
 			path = CCUsagePhoneTests;
+			sourceTree = "<group>";
+		};
+		D80001 /* CCUsageWidgetTests */ = {
+			isa = PBXGroup;
+			children = (
+				B80001 /* QuotaTimelineTests.swift */,
+				B80002 /* QuotaPagingTests.swift */,
+			);
+			path = CCUsageWidgetTests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -390,6 +442,22 @@
 			productReference = B70004 /* CCUsagePhoneTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		E80001 /* CCUsageWidgetTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F80001;
+			buildPhases = (
+				G80001 /* Sources */,
+				C80001 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CCUsageWidgetTests;
+			productName = CCUsageWidgetTests;
+			productReference = B80004 /* CCUsageWidgetTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -419,6 +487,7 @@
 				E50001 /* CCUsageSharedTests */,
 				E60001 /* CCUsageBarTests */,
 				E70001 /* CCUsagePhoneTests */,
+				E80001 /* CCUsageWidgetTests */,
 			);
 		};
 /* End PBXProject section */
@@ -443,6 +512,8 @@
 				A10014 /* QuotaPresentation.swift in Sources */,
 				A10015 /* CloudQuotaStore.swift in Sources */,
 				A10016 /* CodexLimitsClient.swift in Sources */,
+				A10017 /* QuotaPublisher.swift in Sources */,
+				A10018 /* CloudQuotaWriter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -459,6 +530,8 @@
 				A20008 /* PhoneState.swift in Sources */,
 				A20009 /* ContentView.swift in Sources */,
 				A20010 /* PhoneSnapshotCache.swift in Sources */,
+				A20011 /* QuotaWidgetView.swift in Sources */,
+				A20012 /* QuotaPageIntent.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -473,6 +546,9 @@
 				A30005 /* QuotaPresentation.swift in Sources */,
 				A30006 /* CloudQuotaStore.swift in Sources */,
 				A30007 /* PhoneSnapshotCache.swift in Sources */,
+				A30008 /* QuotaTimelineProvider.swift in Sources */,
+				A30009 /* QuotaWidgetView.swift in Sources */,
+				A30010 /* QuotaPageIntent.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -505,6 +581,9 @@
 				A60011 /* QuotaSnapshot.swift in Sources */,
 				A60012 /* QuotaPresentation.swift in Sources */,
 				A60013 /* CloudQuotaStore.swift in Sources */,
+				A60020 /* QuotaPublisherTests.swift in Sources */,
+				A60021 /* QuotaPublisher.swift in Sources */,
+				A60022 /* CloudQuotaWriter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -519,6 +598,22 @@
 				A70005 /* QuotaPresentation.swift in Sources */,
 				A70006 /* CloudQuotaStore.swift in Sources */,
 				A70007 /* PhoneSnapshotCache.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		G80001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A80001 /* QuotaTimelineTests.swift in Sources */,
+				A80002 /* QuotaPagingTests.swift in Sources */,
+				A80003 /* QuotaTimelineProvider.swift in Sources */,
+				A80004 /* QuotaWidgetView.swift in Sources */,
+				A80005 /* QuotaPageIntent.swift in Sources */,
+				A80006 /* QuotaSnapshot.swift in Sources */,
+				A80007 /* QuotaPresentation.swift in Sources */,
+				A80008 /* CloudQuotaStore.swift in Sources */,
+				A80009 /* PhoneSnapshotCache.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -846,6 +941,44 @@
 			};
 			name = Release;
 		};
+		F80002 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ccusagebar.widgettests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		F80003 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ccusagebar.widgettests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -908,6 +1041,15 @@
 			buildConfigurations = (
 				F70002 /* Debug */,
 				F70003 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F80001 /* Build configuration list for PBXNativeTarget "CCUsageWidgetTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F80002 /* Debug */,
+				F80003 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
