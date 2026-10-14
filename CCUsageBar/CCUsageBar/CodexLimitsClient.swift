@@ -63,23 +63,19 @@ actor CodexLimitsClient: QuotaCollector {
     }
 
     // The whole operation, including finding the binary, is bounded by the
-    // timeout. Cancellation and timeout both stop the server.
+    // timeout and returns on time even if the read ignores cancellation.
+    // Cancellation and timeout both cancel the read, which stops the server.
     func read() async -> Result<CodexLimitsReading, CodexReadFailure> {
-        let timeout = self.timeout
-        return await withTaskGroup(of: Result<CodexLimitsReading, CodexReadFailure>.self) { group in
-            group.addTask { await self.readUnbounded() }
-            group.addTask {
-                do {
-                    try await Task.sleep(for: timeout)
-                    return .failure(.timedOut)
-                } catch {
-                    return .failure(.cancelled)
-                }
-            }
-            let first = await group.next() ?? .failure(.cancelled)
-            group.cancelAll()
-            return first
+        let work = Task { await self.readUnbounded() }
+        // The race runs the read in its own task, so the caller's cancellation is passed on here.
+        let result = await withTaskCancellationHandler {
+            await Deadline.race(after: timeout, fallback: .failure(.timedOut)) { await work.value }
+        } onCancel: {
+            work.cancel()
         }
+        // After a timeout the read is still running; cancelling it stops the server.
+        work.cancel()
+        return result
     }
 
     private func readUnbounded() async -> Result<CodexLimitsReading, CodexReadFailure> {

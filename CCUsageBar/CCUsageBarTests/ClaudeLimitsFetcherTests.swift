@@ -89,6 +89,20 @@ final class ClaudeLimitsFetcherTests: XCTestCase {
         XCTAssertEqual(ClaudeLimitsFetcher.extractAccessToken(from: valid), "t")
     }
 
+    // A Keychain prompt nobody answers must not hold up the refresh.
+    func testHungKeychainLookupGivesUpAtTheTimeout() async {
+        let started = ContinuousClock.now
+        let raw = await ClaudeLimitsFetcher.readKeychainItem(timeout: .milliseconds(100)) {
+            try? await Task.sleep(for: .seconds(30))
+            return "late"
+        }
+        XCTAssertNil(raw, "a hung lookup falls through to the credentials file")
+        XCTAssertLessThan(ContinuousClock.now - started, .seconds(5))
+
+        let quick = await ClaudeLimitsFetcher.readKeychainItem(timeout: .seconds(5)) { "blob" }
+        XCTAssertEqual(quick, "blob")
+    }
+
     // MARK: - Account identity (local only)
 
     private func config(account: String?, org: String?, extra: String = "") -> Data {

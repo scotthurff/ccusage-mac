@@ -172,7 +172,7 @@ private struct ProviderCard: View {
                     .monospacedDigit()
                     .foregroundStyle(stale ? .secondary : .primary)
             }
-            UsageBarView(percent: window.window.usedPercent, fill: fill(window))
+            UsageBar(percent: window.window.usedPercent, tint: fill(window))
             if let reset = PhoneText.reset(window, now: now) {
                 Text(reset).font(.footnote).foregroundStyle(.secondary)
             }
@@ -200,13 +200,11 @@ private struct ProviderCard: View {
         }
     }
 
-    // Past, outdated, or unconfirmed values are gray history, never a fresh reading.
+    // The widget's rule: past, outdated, or unconfirmed values are gray
+    // history, never a fresh reading; Claude's model caps use the Fable color.
     private func fill(_ window: WindowPresentation) -> Color {
-        if window.state != .current { return .gray.opacity(0.5) }
-        if window.window.usedPercent >= 80 { return .red }
-        let isFable = window.window.id.localizedCaseInsensitiveContains("fable")
-            || window.window.label.localizedCaseInsensitiveContains("fable")
-        return provider.provider == .claude && isFable ? UsagePalette.fable : Self.tint(for: provider.provider)
+        UsagePalette.barFill(usedPercent: window.window.usedPercent, isStale: window.state != .current,
+                             tint: QuotaWidgetModel.tint(provider.provider, scope: window.window.scope))
     }
 
     static func tint(for provider: QuotaProvider) -> Color {
@@ -215,26 +213,5 @@ private struct ProviderCard: View {
         case .codex: UsagePalette.codex
         default: .accentColor
         }
-    }
-}
-
-private struct UsageBarView: View {
-    let percent: Double
-    let fill: Color
-    private let height: CGFloat = 8
-
-    var body: some View {
-        GeometryReader { geometry in
-            ZStack(alignment: .leading) {
-                Capsule().fill(Color.primary.opacity(0.1))
-                if percent > 0 {
-                    Capsule()
-                        .fill(fill)
-                        .frame(width: max(height, geometry.size.width * min(percent, 100) / 100))
-                }
-            }
-        }
-        .frame(height: height)
-        .accessibilityHidden(true)
     }
 }

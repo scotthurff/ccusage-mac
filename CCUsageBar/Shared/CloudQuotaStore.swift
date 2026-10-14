@@ -22,11 +22,13 @@ struct CloudSnapshotMetadata: Equatable {
 
     // A newer incarnation wins even with a lower revision, so recreating the
     // record recovers, while a delayed copy of an older record never does.
+    // Within one incarnation only the revision decides: a cached creation
+    // date has been through JSON and can drift a fraction of a microsecond.
     func isNewer(than other: CloudSnapshotMetadata) -> Bool {
-        if incarnationCreatedAt != other.incarnationCreatedAt {
-            return incarnationCreatedAt > other.incarnationCreatedAt
+        if incarnation == other.incarnation {
+            return revision > other.revision
         }
-        return incarnation == other.incarnation && revision > other.revision
+        return incarnationCreatedAt > other.incarnationCreatedAt
     }
 }
 

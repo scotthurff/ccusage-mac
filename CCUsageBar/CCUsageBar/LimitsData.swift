@@ -106,7 +106,7 @@ enum MacQuotaDisplay {
         let fill = min(max(used, 0), 100)
         switch window.state {
         case .current:
-            return MacGauge(label: label, percentText: text, fill: fill, tone: used >= 80 ? .warning : .normal,
+            return MacGauge(label: label, percentText: text, fill: fill, tone: used >= QuotaPresentation.warningPercent ? .warning : .normal,
                             isStruckThrough: false, resetsAt: window.window.resetsAt, help: "\(name): \(text) used")
         case .outdated:
             return MacGauge(label: label, percentText: text, fill: fill, tone: .neutral, isStruckThrough: false,
@@ -151,13 +151,11 @@ enum MacQuotaDisplay {
         window.window.durationMinutes.map { abs($0 - minutes) <= 1 } ?? false
     }
 
+    // The shared short names in lowercase ("5h", "wk", "3d"), or "lim" when
+    // the length is unknown.
     private static func shortLabel(_ minutes: Int?) -> String {
         guard let minutes else { return "lim" }
-        if abs(minutes - 300) <= 1 { return "5h" }
-        if abs(minutes - 10_080) <= 1 { return "wk" }
-        if minutes % 1_440 == 0 { return "\(minutes / 1_440)d" }
-        if minutes % 60 == 0 { return "\(minutes / 60)h" }
-        return "\(minutes)m"
+        return QuotaWindow.shortName(minutes: minutes).lowercased()
     }
 }
 

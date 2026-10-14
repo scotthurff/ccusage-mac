@@ -248,7 +248,7 @@ class AppState: ObservableObject {
     }
 
     var limitWarningActive: Bool {
-        (hottestLimit?.percent ?? 0) >= 80
+        (hottestLimit?.percent ?? 0) >= QuotaPresentation.warningPercent
     }
 
     // Menu bar: "$80 · CL 62%" — cost-only when no current limit, limit-only

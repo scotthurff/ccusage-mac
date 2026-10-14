@@ -367,6 +367,9 @@ final class CodexLimitsClientTests: XCTestCase {
         let result = await client(transport, timeout: .milliseconds(300)).read()
         XCTAssertEqual(result.failure, .timedOut)
         XCTAssertLessThan(Date().timeIntervalSince(started), 3)
+        // The read returns on time, then its cancelled work stops the server.
+        let waitUntil = Date().addingTimeInterval(2)
+        while transport.shutdowns == 0, Date() < waitUntil { try? await Task.sleep(for: .milliseconds(10)) }
         XCTAssertEqual(transport.shutdowns, 1)
         XCTAssertEqual(transport.methods, ["initialize"])
     }

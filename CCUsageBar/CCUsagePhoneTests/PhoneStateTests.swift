@@ -301,6 +301,16 @@ final class PhoneStateTests: XCTestCase {
         XCTAssertEqual(PhoneText.checked(now.addingTimeInterval(-120), now: now), "Checked iCloud 2 minutes ago")
     }
 
+    func testCodexCreditsDropsAnExpiryThatHasPassed() {
+        let la = Self.calendar("America/Los_Angeles")
+        let expiry = Self.utc(2026, 10, 22, 18, 41)
+        let credits = ResetCreditsInfo(available: 3, nextExpiry: expiry)
+        XCTAssertEqual(PhoneText.resetCredits(credits, now: expiry.addingTimeInterval(3600),
+                                              calendar: la, locale: Self.english), "3 full resets")
+        XCTAssertEqual(PhoneText.resetCredits(credits, now: expiry, calendar: la, locale: Self.english),
+                       "3 full resets")
+    }
+
     // MARK: Helpers
 
     private static let english = Locale(identifier: "en_US")

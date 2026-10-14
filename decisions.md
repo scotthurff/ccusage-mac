@@ -12,6 +12,17 @@
 - **Codex gauges are local-snapshot only**: they reflect the last local Codex turn, while the limits are account-wide. If Codex ever runs on another machine (e.g. the OpenClaw box), the gauges understate — and an expired local window shows a confident 0% that may be wrong. Consider a snapshot-age indicator past ~1h.
 - **Hardcoded `claude-code/2.0.0` User-Agent will age**: if Claude gauges ever silently blank (429s in the log), bump the version string in ClaudeLimitsFetcher first.
 
+## 2026-10-14: Code review fixes
+
+**Decision**:
+- Within one record incarnation, the phone orders snapshots by revision alone; creation dates decide only between different incarnations. The cached creation date passes through JSON and can drift by a fraction of a microsecond, which made the old exact-date comparison able to reject every newer revision of the same record. KTD2's intent is unchanged.
+- The Claude Keychain lookup gives up after 10 seconds and stops the `security` process, so a stuck lookup can no longer hold up the Codex reading or publishing. If a Keychain permission prompt ever appears, it has those 10 seconds before the next refresh tries again.
+- The Codex read returns at its 15-second limit and shuts the server down just after, instead of waiting for the shutdown. A manual refresh right after a timeout can briefly overlap two server processes.
+- The phone colors model-specific caps by scope, like the widget, instead of by the word "fable" in the name. The short window labels ("5h", "Wk") and the 80% warning line each live in one shared place.
+- The phone no longer shows a reset-credit expiry that has already passed.
+
+**Why**: Findings from the full code review on 2026-10-14 (run 20261014-155518-c895f2d1), each confirmed by an independent validator; the ordering fix came from a correctness reviewer's residual risk and was reproduced by a failing test first.
+
 ## 2026-10-14: Phone UI tests use a Debug-only fixture hook
 
 **Decision**: `CCUsagePhoneApp.swift` has a `UITestFixture` hook compiled only in Debug builds and active only with the launch argument `-uiTestFixture <name>`. It builds the app's state from a temporary cache and fake iCloud calls with clearly fake values. `-uiTestOpenURL` drives provider links, because the `ccusage` scheme is not registered. The failed-refresh fixture answers fetches normally for the first 3 seconds after launch and fails afterwards, because the app refreshes on its own once or twice at launch.

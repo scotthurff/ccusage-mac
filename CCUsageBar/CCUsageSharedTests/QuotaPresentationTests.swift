@@ -99,4 +99,11 @@ final class QuotaPresentationTests: XCTestCase {
         XCTAssertEqual(shown.map(\.provider), [.claude, .codex])
         XCTAssertEqual(shown[0].windows.map(\.window.id), ["claude:5h", "claude:7d", "claude:fable", "claude:opus"])
     }
+
+    func testShortNamesMatchTheLengthNames() {
+        let minutes = [300, 299, 10_080, 10_081, 4_320, 120, 90]
+        XCTAssertEqual(minutes.map { QuotaWindow.shortName(minutes: $0) }, ["5h", "5h", "Wk", "Wk", "3d", "2h", "90m"])
+        XCTAssertEqual(minutes.map { QuotaWindow.lengthName(minutes: $0) },
+                       ["5-hour", "5-hour", "Weekly", "Weekly", "3-day", "2-hour", "90-minute"])
+    }
 }

@@ -9,6 +9,13 @@ enum UsagePalette {
     static let fable = Color(red: 0.63, green: 0.28, blue: 0.13)
     static let codex = Color(red: 0.25, green: 0.58, blue: 0.65)
     static let background = Color(white: 0.11)
+
+    // A limit's bar color in the widget and the app: gray for an outdated or
+    // unconfirmed value, red from the warning line up, otherwise the tint.
+    static func barFill(usedPercent: Double, isStale: Bool, tint: WidgetTint) -> Color {
+        if isStale { return .gray.opacity(0.5) }
+        return usedPercent >= QuotaPresentation.warningPercent ? .red : tint.color
+    }
 }
 
 // What the widget says when it has no readings to show. None of these carry
@@ -122,7 +129,7 @@ enum QuotaWidgetModel {
     }
 
     // Model caps inside Claude's allowance use the darker Fable color.
-    private static func tint(_ provider: QuotaProvider, scope: WindowScope) -> WidgetTint {
+    static func tint(_ provider: QuotaProvider, scope: WindowScope) -> WidgetTint {
         switch provider {
         case .claude: scope == .model ? .fable : .claude
         case .codex: .codex
@@ -140,18 +147,11 @@ enum QuotaWidgetModel {
     // "5h" and "Wk" for account-wide windows; a model cap keeps its name.
     static func shortLabel(_ window: QuotaWindow) -> String {
         guard let minutes = window.durationMinutes else { return window.label }
-        guard window.scope == .model else { return shortLength(minutes) }
+        let short = QuotaWindow.shortName(minutes: minutes)
+        guard window.scope == .model else { return short }
         let suffix = " " + QuotaWindow.lengthName(minutes: minutes).lowercased()
         guard window.label.lowercased().hasSuffix(suffix) else { return window.label }
-        return "\(window.label.dropLast(suffix.count)) \(shortLength(minutes))"
-    }
-
-    private static func shortLength(_ minutes: Int) -> String {
-        if abs(minutes - 300) <= 1 { return "5h" }
-        if abs(minutes - 10_080) <= 1 { return "Wk" }
-        if minutes % 1_440 == 0 { return "\(minutes / 1_440)d" }
-        if minutes % 60 == 0 { return "\(minutes / 60)h" }
-        return "\(minutes)m"
+        return "\(window.label.dropLast(suffix.count)) \(short)"
     }
 
     static func percentText(_ row: WidgetRow, density: RowDensity) -> String {
@@ -448,8 +448,7 @@ private struct WindowRow: View {
     let density: RowDensity
 
     private var fill: Color {
-        if row.isStale { return .gray.opacity(0.5) }
-        return row.usedPercent >= 80 ? .red : row.tint.color
+        UsagePalette.barFill(usedPercent: row.usedPercent, isStale: row.isStale, tint: row.tint)
     }
 
     var body: some View {
@@ -532,7 +531,9 @@ private struct WindowRow: View {
     }
 }
 
-private struct UsageBar: View {
+// Also the app's bar. The track follows the color scheme, so it stays
+// readable in the app's light mode as well as in the always-dark widget.
+struct UsageBar: View {
     let percent: Double
     let tint: Color
     var height: CGFloat = 8

@@ -75,6 +75,21 @@ final class CloudQuotaStoreTests: XCTestCase {
         XCTAssertTrue(next.isNewer(than: old))
         XCTAssertFalse(old.isNewer(than: old))
     }
+
+    // The cached copy's creation date has been through a JSON round trip and
+    // can sit a fraction of a microsecond off the server's. Within one
+    // incarnation only the revision may decide, or the phone stops accepting
+    // newer revisions of the same record.
+    func testSameIncarnationOrdersByRevisionDespiteTinyDateDrift() {
+        let serverDate = Date(timeIntervalSinceReferenceDate: 813_706_301.455_999_9)
+        let cachedDate = Date(timeIntervalSinceReferenceDate: serverDate.timeIntervalSinceReferenceDate.nextUp)
+        let cached = CloudSnapshotMetadata(incarnation: "A", incarnationCreatedAt: cachedDate, revision: 5)
+        let fetched = CloudSnapshotMetadata(incarnation: "A", incarnationCreatedAt: serverDate, revision: 6)
+        XCTAssertTrue(fetched.isNewer(than: cached))
+        XCTAssertFalse(cached.isNewer(than: fetched))
+        let sameRevision = CloudSnapshotMetadata(incarnation: "A", incarnationCreatedAt: serverDate, revision: 5)
+        XCTAssertFalse(sameRevision.isNewer(than: cached))
+    }
 }
 
 private struct FakeFetcher: CloudRecordFetching {

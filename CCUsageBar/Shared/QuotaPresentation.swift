@@ -6,6 +6,8 @@ struct QuotaPresentation {
     static let outdatedAfter: TimeInterval = 60 * 60
     // Small clock differences between devices are not "from the future".
     static let futureTolerance: TimeInterval = 5 * 60
+    // A current reading at or above this used percentage shows as a warning.
+    static let warningPercent: Double = 80
 
     let now: Date
 
@@ -129,6 +131,15 @@ extension QuotaWindow {
         if minutes % 1_440 == 0 { return "\(minutes / 1_440)-day" }
         if minutes % 60 == 0 { return "\(minutes / 60)-hour" }
         return "\(minutes)-minute"
+    }
+
+    // The same lengths, short: "5h", "Wk", "3d", "2h", or "90m".
+    static func shortName(minutes: Int) -> String {
+        if abs(minutes - 300) <= 1 { return "5h" }
+        if abs(minutes - 10_080) <= 1 { return "Wk" }
+        if minutes % 1_440 == 0 { return "\(minutes / 1_440)d" }
+        if minutes % 60 == 0 { return "\(minutes / 60)h" }
+        return "\(minutes)m"
     }
 }
 

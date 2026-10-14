@@ -299,7 +299,7 @@ enum PhoneText {
         case 1: count = "1 full reset"
         default: count = "\(credits.available) full resets"
         }
-        guard let expiry = credits.nextExpiry else { return count }
+        guard let expiry = credits.nextExpiry, expiry > now else { return count }
         return "\(count) · next expires \(localTime(expiry, now: now, calendar: calendar, locale: locale))"
     }
 

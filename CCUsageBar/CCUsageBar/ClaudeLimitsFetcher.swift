@@ -146,7 +146,7 @@ actor ClaudeLimitsFetcher: QuotaCollector {
     // MARK: - Token resolution (read-only; token never logged, never persisted)
 
     private func resolveAccessToken() async -> String? {
-        if let raw = await readKeychainItem(), let token = Self.extractAccessToken(from: raw) {
+        if let raw = await Self.readKeychainItem(), let token = Self.extractAccessToken(from: raw) {
             return token
         }
         let credentialsFile = FileManager.default.homeDirectoryForCurrentUser
@@ -196,37 +196,54 @@ actor ClaudeLimitsFetcher: QuotaCollector {
         return data
     }
 
-    private func readKeychainItem() async -> String? {
-        await withCheckedContinuation { continuation in
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: "/usr/bin/security")
-            process.arguments = [
-                "find-generic-password",
-                "-a", NSUserName(),
-                "-s", "Claude Code-credentials",
-                "-w"
-            ]
-            let stdoutPipe = Pipe()
-            process.standardOutput = stdoutPipe
-            process.standardError = Pipe()
+    // A lookup stuck on a Keychain prompt nobody answers gives up after 10
+    // seconds, the same as the usage request. The credentials file is tried
+    // next, and the Codex reading still gets published. Tests pass `lookup`.
+    static func readKeychainItem(timeout: Duration = .seconds(10),
+                                 lookup: @escaping () async -> String? = runSecurityLookup) async -> String? {
+        await Deadline.race(after: timeout, fallback: nil, lookup)
+    }
 
-            process.terminationHandler = { proc in
-                let data = stdoutPipe.fileHandleForReading.readDataToEndOfFile()
-                guard proc.terminationStatus == 0,
-                      let output = String(data: data, encoding: .utf8)?
-                        .trimmingCharacters(in: .whitespacesAndNewlines),
-                      !output.isEmpty else {
-                    continuation.resume(returning: nil)
-                    return
+    private static func runSecurityLookup() async -> String? {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/security")
+        process.arguments = [
+            "find-generic-password",
+            "-a", NSUserName(),
+            "-s", "Claude Code-credentials",
+            "-w"
+        ]
+        let stdoutPipe = Pipe()
+        process.standardOutput = stdoutPipe
+        process.standardError = Pipe()
+
+        return await withTaskCancellationHandler {
+            await withCheckedContinuation { (continuation: CheckedContinuation<String?, Never>) in
+                process.terminationHandler = { proc in
+                    let data = stdoutPipe.fileHandleForReading.readDataToEndOfFile()
+                    guard proc.terminationStatus == 0,
+                          let output = String(data: data, encoding: .utf8)?
+                            .trimmingCharacters(in: .whitespacesAndNewlines),
+                          !output.isEmpty else {
+                        continuation.resume(returning: nil)
+                        return
+                    }
+                    continuation.resume(returning: output)
                 }
-                continuation.resume(returning: output)
-            }
 
-            do {
-                try process.run()
-            } catch {
-                Self.logger.error("Failed to launch /usr/bin/security: \(error.localizedDescription)")
-                continuation.resume(returning: nil)
+                do {
+                    try process.run()
+                    // Covers a cancellation that arrived just before launch.
+                    if Task.isCancelled { process.terminate() }
+                } catch {
+                    Self.logger.error("Failed to launch /usr/bin/security: \(error.localizedDescription)")
+                    continuation.resume(returning: nil)
+                }
+            }
+        } onCancel: {
+            if process.isRunning {
+                Self.logger.info("Keychain lookup timed out or was cancelled; stopping it")
+                process.terminate()
             }
         }
     }

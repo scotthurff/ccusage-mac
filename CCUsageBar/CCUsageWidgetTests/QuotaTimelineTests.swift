@@ -201,6 +201,16 @@ final class QuotaTimelineTests: XCTestCase {
         XCTAssertEqual(sections[0].rows.count, 3)
     }
 
+    // The app's details use this same rule, so a model cap matches on both.
+    func testBarFillUsesScopeForFableColorAndTheSharedWarningLine() {
+        XCTAssertEqual(QuotaWidgetModel.tint(.claude, scope: .model), .fable)
+        XCTAssertEqual(QuotaWidgetModel.tint(.claude, scope: .provider), .claude)
+        XCTAssertEqual(QuotaWidgetModel.tint(.codex, scope: .model), .codex)
+        XCTAssertEqual(UsagePalette.barFill(usedPercent: 79.9, isStale: false, tint: .fable), UsagePalette.fable)
+        XCTAssertEqual(UsagePalette.barFill(usedPercent: QuotaPresentation.warningPercent, isStale: false, tint: .claude), .red)
+        XCTAssertEqual(UsagePalette.barFill(usedPercent: 95, isStale: true, tint: .claude), .gray.opacity(0.5))
+    }
+
     // MARK: Scenario 3 (AE6): offline time passes; values go outdated, never zero
 
     func testOfflineTimelineCrossesResetAndAgeBoundariesWithoutZeroing() async throws {
