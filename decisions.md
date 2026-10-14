@@ -6,6 +6,14 @@
 - **Codex gauges are local-snapshot only**: they reflect the last local Codex turn, while the limits are account-wide. If Codex ever runs on another machine (e.g. the OpenClaw box), the gauges understate — and an expired local window shows a confident 0% that may be wrong. Consider a snapshot-age indicator past ~1h.
 - **Hardcoded `claude-code/2.0.0` User-Agent will age**: if Claude gauges ever silently blank (429s in the log), bump the version string in ClaudeLimitsFetcher first.
 
+## 2026-10-14: Native iPhone widget scope confirmed
+
+**Decision**: Use the [iPhone Usage Widget plan](docs/plans/2026-10-14-0849-feat-iphone-usage-widget-plan.md) as the scope for a personal native iPhone widget and small companion app, fed by private iCloud snapshots from this Mac. OpenClaw integration is deferred. This records the intended direction; implementation has not started.
+
+**Why**: Scott wants to compare available Claude/Codex capacity from the Home Screen before starting remote or cloud work. The Mac normally remains awake, so it can continue collecting readings. The plan requires visible reading age and identifies developer signing, iCloud compatibility with the existing Mac app, and current Codex account-limit retrieval as early feasibility checks.
+
+**Planned architecture**: Keep the existing unsandboxed Mac app and add an iOS companion app and WidgetKit extension in the same project. The Mac publishes one latest snapshot to a private CloudKit record; the phone app and extension share a coordinated cache. Credentials remain on the Mac. Use fresh Codex app-server account-limit readings and shared freshness rules across all three targets. Once implemented, these rules supersede the local-log-only Codex source and expiry-to-zero display behavior below: an expired or failed reading remains dated history until a new observation arrives. Validate the signed Mac-to-phone transfer before building the remaining feature.
+
 ## 2026-09-01: Fable 5.1 pricing pinned in a ccusage config override
 
 **Decision**: Pin `claude-fable-5-1` pricing in `~/.config/claude/ccusage.json` under `defaults.pricingOverrides`, using Anthropic's published rates: input $10/M, output $50/M, cache write $12.50/M, cache read $0.25/M. No app code changed. The Fable sub-slice already matches any model name starting with `claude-fable`, and the FABLE limits row comes from the generic `limits[]` parsing; the endpoint reports one scoped "Fable" cap that covers the whole family.
