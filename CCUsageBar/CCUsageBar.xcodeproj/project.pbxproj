@@ -17,7 +17,38 @@
 		A10008 /* CodexLimitsReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10010; };
 		A10009 /* ClaudeLimitsFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10011; };
 		A10010 /* LimitsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10012; };
+		A10011 /* MacSmokeCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10014; };
+		A10012 /* CloudKitSmoke.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40001; };
+		A20001 /* CCUsagePhoneApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20001; };
+		A20002 /* CloudKitSmoke.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40001; };
+		A20003 /* CCUsageWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B30004; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		A30001 /* CCUsageWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = B30001; };
+		A30002 /* CloudKitSmoke.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40001; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		K20001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = H10001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E30001;
+			remoteInfo = CCUsageWidget;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		I20001 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				A20003 /* CCUsageWidget.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		B10001 /* CCUsageBarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CCUsageBarApp.swift; sourceTree = "<group>"; };
@@ -30,12 +61,36 @@
 		B10010 /* CodexLimitsReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexLimitsReader.swift; sourceTree = "<group>"; };
 		B10011 /* ClaudeLimitsFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeLimitsFetcher.swift; sourceTree = "<group>"; };
 		B10012 /* LimitsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LimitsView.swift; sourceTree = "<group>"; };
+		B10013 /* CCUsageBar.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CCUsageBar.entitlements; sourceTree = "<group>"; };
+		B10014 /* MacSmokeCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacSmokeCheck.swift; sourceTree = "<group>"; };
 		B10007 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B10008 /* CCUsageBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CCUsageBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B20001 /* CCUsagePhoneApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CCUsagePhoneApp.swift; sourceTree = "<group>"; };
+		B20002 /* CCUsagePhone.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CCUsagePhone.entitlements; sourceTree = "<group>"; };
+		B20003 /* CCUsagePhone.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CCUsagePhone.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B30001 /* CCUsageWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CCUsageWidget.swift; sourceTree = "<group>"; };
+		B30002 /* CCUsageWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CCUsageWidget.entitlements; sourceTree = "<group>"; };
+		B30003 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B30004 /* CCUsageWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CCUsageWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		B40001 /* CloudKitSmoke.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitSmoke.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		C10001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C20001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C30001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -49,6 +104,9 @@
 			isa = PBXGroup;
 			children = (
 				D10002 /* CCUsageBar */,
+				D20001 /* CCUsagePhone */,
+				D30001 /* CCUsageWidget */,
+				D40001 /* Shared */,
 				D10003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -66,7 +124,9 @@
 				B10010 /* CodexLimitsReader.swift */,
 				B10011 /* ClaudeLimitsFetcher.swift */,
 				B10012 /* LimitsView.swift */,
+				B10014 /* MacSmokeCheck.swift */,
 				B10007 /* Info.plist */,
+				B10013 /* CCUsageBar.entitlements */,
 			);
 			path = CCUsageBar;
 			sourceTree = "<group>";
@@ -75,8 +135,37 @@
 			isa = PBXGroup;
 			children = (
 				B10008 /* CCUsageBar.app */,
+				B20003 /* CCUsagePhone.app */,
+				B30004 /* CCUsageWidget.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		D20001 /* CCUsagePhone */ = {
+			isa = PBXGroup;
+			children = (
+				B20001 /* CCUsagePhoneApp.swift */,
+				B20002 /* CCUsagePhone.entitlements */,
+			);
+			path = CCUsagePhone;
+			sourceTree = "<group>";
+		};
+		D30001 /* CCUsageWidget */ = {
+			isa = PBXGroup;
+			children = (
+				B30001 /* CCUsageWidget.swift */,
+				B30003 /* Info.plist */,
+				B30002 /* CCUsageWidget.entitlements */,
+			);
+			path = CCUsageWidget;
+			sourceTree = "<group>";
+		};
+		D40001 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				B40001 /* CloudKitSmoke.swift */,
+			);
+			path = Shared;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -97,6 +186,40 @@
 			productName = CCUsageBar;
 			productReference = B10008 /* CCUsageBar.app */;
 			productType = "com.apple.product-type.application";
+		};
+		E20001 /* CCUsagePhone */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F20001;
+			buildPhases = (
+				G20001 /* Sources */,
+				C20001 /* Frameworks */,
+				I20001 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				J20001 /* PBXTargetDependency */,
+			);
+			name = CCUsagePhone;
+			productName = CCUsagePhone;
+			productReference = B20003 /* CCUsagePhone.app */;
+			productType = "com.apple.product-type.application";
+		};
+		E30001 /* CCUsageWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F30001;
+			buildPhases = (
+				G30001 /* Sources */,
+				C30001 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CCUsageWidget;
+			productName = CCUsageWidget;
+			productReference = B30004 /* CCUsageWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -122,6 +245,8 @@
 			projectRoot = "";
 			targets = (
 				E10001 /* CCUsageBar */,
+				E20001 /* CCUsagePhone */,
+				E30001 /* CCUsageWidget */,
 			);
 		};
 /* End PBXProject section */
@@ -141,10 +266,38 @@
 				A10008 /* CodexLimitsReader.swift in Sources */,
 				A10009 /* ClaudeLimitsFetcher.swift in Sources */,
 				A10010 /* LimitsView.swift in Sources */,
+				A10011 /* MacSmokeCheck.swift in Sources */,
+				A10012 /* CloudKitSmoke.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		G20001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A20001 /* CCUsagePhoneApp.swift in Sources */,
+				A20002 /* CloudKitSmoke.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		G30001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A30001 /* CCUsageWidget.swift in Sources */,
+				A30002 /* CloudKitSmoke.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		J20001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E30001 /* CCUsageWidget */;
+			targetProxy = K20001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		F10004 /* Debug */ = {
@@ -195,7 +348,8 @@
 		F10006 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_ENTITLEMENTS = CCUsageBar/CCUsageBar.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -219,7 +373,8 @@
 		F10007 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_ENTITLEMENTS = CCUsageBar/CCUsageBar.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -240,6 +395,116 @@
 			};
 			name = Release;
 		};
+		F20002 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = CCUsagePhone/CCUsagePhone.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = CCUsage;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ccusagebar.phone;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		F20003 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = CCUsagePhone/CCUsagePhone.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = CCUsage;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ccusagebar.phone;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		F30002 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = CCUsageWidget/CCUsageWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CCUsageWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = CCUsageWidget;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ccusagebar.phone.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		F30003 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = CCUsageWidget/CCUsageWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CCUsageWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = CCUsageWidget;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ccusagebar.phone.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -257,6 +522,24 @@
 			buildConfigurations = (
 				F10006 /* Debug */,
 				F10007 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F20001 /* Build configuration list for PBXNativeTarget "CCUsagePhone" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F20002 /* Debug */,
+				F20003 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F30001 /* Build configuration list for PBXNativeTarget "CCUsageWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F30002 /* Debug */,
+				F30003 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
