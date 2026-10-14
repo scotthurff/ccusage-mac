@@ -45,7 +45,7 @@ Steps once signing works:
 - `CCUsagePhone` builds with the widget embedded under `PlugIns/`. Both binaries carry the iCloud container entitlement.
 - The app launches. With no iCloud account in the simulator it shows "no iCloud account" and "Fetch failed: This request requires an authenticated account". It shows no reading, which is the required failure behavior.
 - iOS registered the widget: the system logged its description and its single large size, and started the extension process.
-- Adding the widget by simulated taps failed. The simulator's widget picker logged "No suggestions file found" and closed. That is a simulator picker problem, not the extension. Retry on the real phone.
+- Simulated taps could not open the widget picker; it logged "No suggestions file found" and closed. Scott added the large widget by hand. It rendered "SYNTHETIC SMOKE TEST", "Fetch failed: This request requires an authenticated account", and its own fetch time. The extension made its own iCloud request and showed the failure, not a reading.
 
 ## Codex current account limits
 
