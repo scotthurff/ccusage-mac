@@ -5,10 +5,6 @@ import AppKit
 struct CCUsageBarApp: App {
     @StateObject private var appState = AppState()
 
-    init() {
-        MacSmokeCheck.runIfRequested()
-    }
-
     var body: some Scene {
         MenuBarExtra {
             PopoverContentView()

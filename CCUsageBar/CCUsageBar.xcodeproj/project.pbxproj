@@ -16,13 +16,9 @@
 		A10007 /* LimitsData.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10009; };
 		A10009 /* ClaudeLimitsFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10011; };
 		A10010 /* LimitsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10012; };
-		A10011 /* MacSmokeCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10014; };
-		A10012 /* CloudKitSmoke.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40001; };
 		A20001 /* CCUsagePhoneApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20001; };
-		A20002 /* CloudKitSmoke.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40001; };
 		A20003 /* CCUsageWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B30004; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A30001 /* CCUsageWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = B30001; };
-		A30002 /* CloudKitSmoke.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40001; };
 		A50001 /* QuotaSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50001; };
 		A50002 /* QuotaPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50002; };
 		A50003 /* CloudQuotaStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50003; };
@@ -118,7 +114,6 @@
 		B10011 /* ClaudeLimitsFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeLimitsFetcher.swift; sourceTree = "<group>"; };
 		B10012 /* LimitsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LimitsView.swift; sourceTree = "<group>"; };
 		B10013 /* CCUsageBar.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CCUsageBar.entitlements; sourceTree = "<group>"; };
-		B10014 /* MacSmokeCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacSmokeCheck.swift; sourceTree = "<group>"; };
 		B10007 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B10008 /* CCUsageBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CCUsageBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B20001 /* CCUsagePhoneApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CCUsagePhoneApp.swift; sourceTree = "<group>"; };
@@ -128,7 +123,6 @@
 		B30002 /* CCUsageWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CCUsageWidget.entitlements; sourceTree = "<group>"; };
 		B30003 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B30004 /* CCUsageWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CCUsageWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		B40001 /* CloudKitSmoke.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitSmoke.swift; sourceTree = "<group>"; };
 		B50001 /* QuotaSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuotaSnapshotTests.swift; sourceTree = "<group>"; };
 		B50002 /* QuotaPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuotaPresentationTests.swift; sourceTree = "<group>"; };
 		B50003 /* CloudQuotaStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudQuotaStoreTests.swift; sourceTree = "<group>"; };
@@ -238,7 +232,6 @@
 				B10009 /* LimitsData.swift */,
 				B10011 /* ClaudeLimitsFetcher.swift */,
 				B10012 /* LimitsView.swift */,
-				B10014 /* MacSmokeCheck.swift */,
 				B10007 /* Info.plist */,
 				B10013 /* CCUsageBar.entitlements */,
 				B10015 /* CodexLimitsClient.swift */,
@@ -288,7 +281,6 @@
 		D40001 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
-				B40001 /* CloudKitSmoke.swift */,
 				B40002 /* QuotaSnapshot.swift */,
 				B40003 /* QuotaPresentation.swift */,
 				B40004 /* CloudQuotaStore.swift */,
@@ -502,8 +494,6 @@
 				A10007 /* LimitsData.swift in Sources */,
 				A10009 /* ClaudeLimitsFetcher.swift in Sources */,
 				A10010 /* LimitsView.swift in Sources */,
-				A10011 /* MacSmokeCheck.swift in Sources */,
-				A10012 /* CloudKitSmoke.swift in Sources */,
 				A10013 /* QuotaSnapshot.swift in Sources */,
 				A10014 /* QuotaPresentation.swift in Sources */,
 				A10015 /* CloudQuotaStore.swift in Sources */,
@@ -518,7 +508,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				A20001 /* CCUsagePhoneApp.swift in Sources */,
-				A20002 /* CloudKitSmoke.swift in Sources */,
 				A20005 /* QuotaSnapshot.swift in Sources */,
 				A20006 /* QuotaPresentation.swift in Sources */,
 				A20007 /* CloudQuotaStore.swift in Sources */,
@@ -535,7 +524,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				A30001 /* CCUsageWidget.swift in Sources */,
-				A30002 /* CloudKitSmoke.swift in Sources */,
 				A30004 /* QuotaSnapshot.swift in Sources */,
 				A30005 /* QuotaPresentation.swift in Sources */,
 				A30006 /* CloudQuotaStore.swift in Sources */,

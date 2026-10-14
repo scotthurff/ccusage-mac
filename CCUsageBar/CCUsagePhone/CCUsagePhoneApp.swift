@@ -53,7 +53,6 @@ struct PreviewScreen: View {
                             }
                         }
                     }
-                    SmokeSection()
                 }
                 .padding()
             }
@@ -101,51 +100,5 @@ private struct WidgetPreviewCard: View {
                 .allowsHitTesting(false)
         }
         .frame(maxWidth: .infinity)
-    }
-}
-
-// TEMPORARY feasibility check (plan U1). Shows the synthetic CloudKit record
-// written by the Mac smoke check.
-private struct SmokeSection: View {
-    @State private var account = "checking…"
-    @State private var result = "not fetched"
-    @State private var fetching = false
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("iCloud delivery test (temporary)")
-                .font(.footnote.weight(.semibold))
-                .foregroundStyle(.secondary)
-            Text("Account: \(account)")
-                .font(.caption)
-            Text(result)
-                .font(.caption.monospaced())
-            Button(fetching ? "Fetching…" : "Fetch test record") {
-                Task { await fetch() }
-            }
-            .font(.caption)
-            .disabled(fetching)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .task { await fetch() }
-    }
-
-    private func fetch() async {
-        fetching = true
-        defer { fetching = false }
-        account = await CloudKitSmoke.accountStatusDescription()
-        do {
-            if let reading = try await CloudKitSmoke.read() {
-                result = """
-                nonce \(reading.nonce) from \(reading.writer)
-                written \(reading.writtenAt.formatted(date: .abbreviated, time: .standard))
-                fetched \(Date().formatted(date: .omitted, time: .standard))
-                """
-            } else {
-                result = "No record yet. Run the Mac smoke check."
-            }
-        } catch {
-            result = "Fetch failed: \(error.localizedDescription)"
-        }
     }
 }
