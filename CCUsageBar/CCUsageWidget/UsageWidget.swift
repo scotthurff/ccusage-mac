@@ -1,8 +1,8 @@
 import SwiftUI
 import WidgetKit
 
-// Large Home Screen widget: Claude and Codex limits with used percentages,
-// reset times, and each provider's reading age.
+// Home Screen widget (small, medium, large): Claude and Codex limits with used
+// percentages, reset times, and each provider's reading age.
 // PREVIEW: fed by a fixed sample of real 2026-10-14 readings until the iCloud
 // snapshot path exists (plan U2-U6). The widget says "Preview" on screen.
 
@@ -14,6 +14,12 @@ struct UsageWindow: Identifiable {
     let resetsAt: Date?
     let weekly: Bool
     let tint: Color
+    // A model-specific cap inside a provider's allowance (e.g. Fable).
+    var scoped: Bool = false
+}
+
+enum RowDensity {
+    case full, compact, mini
 }
 
 struct ProviderReading: Identifiable {
@@ -59,7 +65,8 @@ enum UsagePreview {
                 UsageWindow(id: "claude-wk", label: "Weekly", shortLabel: "Wk", usedPercent: 17,
                             resetsAt: Date(timeIntervalSinceReferenceDate: 813_967_199), weekly: true, tint: UsagePalette.claude),
                 UsageWindow(id: "claude-fable-wk", label: "Fable weekly", shortLabel: "Fable", usedPercent: 0,
-                            resetsAt: Date(timeIntervalSinceReferenceDate: 813_967_200), weekly: true, tint: UsagePalette.fable),
+                            resetsAt: Date(timeIntervalSinceReferenceDate: 813_967_200), weekly: true, tint: UsagePalette.fable,
+                            scoped: true),
             ]
         ),
         ProviderReading(
@@ -124,11 +131,24 @@ struct UsageWidgetContent: View {
     }
 
     @ViewBuilder private var content: some View {
-        if family == .systemMedium {
+        if family == .systemSmall {
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(entry.providers) { provider in
+                    ProviderSection(provider: provider, now: entry.date, density: .mini)
+                }
+                Spacer(minLength: 0)
+                if entry.isPreview {
+                    Text("Preview")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        } else if family == .systemMedium {
             // Providers side by side with one-line rows.
             HStack(alignment: .top, spacing: 16) {
                 ForEach(entry.providers) { provider in
-                    ProviderSection(provider: provider, now: entry.date, compact: true)
+                    ProviderSection(provider: provider, now: entry.date, density: .compact)
                         .frame(maxWidth: .infinity, alignment: .topLeading)
                 }
             }
@@ -143,7 +163,7 @@ struct UsageWidgetContent: View {
         } else {
             VStack(alignment: .leading, spacing: 16) {
                 ForEach(entry.providers) { provider in
-                    ProviderSection(provider: provider, now: entry.date, compact: false)
+                    ProviderSection(provider: provider, now: entry.date, density: .full)
                 }
                 Spacer(minLength: 0)
                 if entry.isPreview {
@@ -159,21 +179,30 @@ struct UsageWidgetContent: View {
 private struct ProviderSection: View {
     let provider: ProviderReading
     let now: Date
-    let compact: Bool
+    let density: RowDensity
 
     private var isOutdated: Bool {
         now.timeIntervalSince(provider.observedAt) >= UsageFreshness.outdatedAfter
     }
 
+    // The small size shows a model-specific cap only when it is closer to its
+    // limit than every provider-wide window, i.e. when it is the one that binds.
+    private var visibleWindows: [UsageWindow] {
+        guard density == .mini else { return provider.windows }
+        let widest = provider.windows.filter { !$0.scoped }.map(\.usedPercent).max() ?? 0
+        return provider.windows.filter { !$0.scoped || $0.usedPercent > widest }
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: compact ? 7 : 10) {
-            if compact {
+        VStack(alignment: .leading, spacing: spacing) {
+            if density != .full {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(provider.name)
-                        .font(.subheadline.weight(.semibold))
+                        .font(density == .mini ? .footnote.weight(.semibold) : .subheadline.weight(.semibold))
                         .foregroundStyle(isOutdated ? Color.secondary : provider.tint)
                     Spacer(minLength: 2)
-                    (isOutdated ? Text("Outdated · \(ageText)") : ageText)
+                    // Small size: gray styling marks an outdated reading; the word won't fit.
+                    (isOutdated && density == .compact ? Text("Outdated · \(ageText)") : ageText)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -182,8 +211,8 @@ private struct ProviderSection: View {
             } else {
                 header
             }
-            ForEach(provider.windows) { window in
-                WindowRow(window: window, providerOutdated: isOutdated, now: now, compact: compact)
+            ForEach(visibleWindows) { window in
+                WindowRow(window: window, providerOutdated: isOutdated, now: now, density: density)
             }
             if provider.resetCredits != nil || provider.creditBalance != nil {
                 VStack(alignment: .leading, spacing: 2) {
@@ -194,7 +223,7 @@ private struct ProviderSection: View {
                         Text("\(Int(balance).formatted()) credits")
                     }
                 }
-                .font(compact ? .caption2 : .caption)
+                .font(density == .full ? .caption : .caption2)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.85)
@@ -202,9 +231,17 @@ private struct ProviderSection: View {
         }
     }
 
+    private var spacing: CGFloat {
+        switch density {
+        case .full: 10
+        case .compact: 7
+        case .mini: 4
+        }
+    }
+
     private func resetCreditsText(_ credits: ResetCredits) -> String {
         let count = credits.available == 1 ? "1 full reset" : "\(credits.available) full resets"
-        guard credits.available > 0, let expiry = credits.nextExpiry else { return count }
+        guard density != .mini, credits.available > 0, let expiry = credits.nextExpiry else { return count }
         let soon = expiry.timeIntervalSince(now) < 6 * 24 * 60 * 60
         let date = soon
             ? expiry.formatted(.dateTime.weekday(.abbreviated))
@@ -244,7 +281,7 @@ private struct WindowRow: View {
     let window: UsageWindow
     let providerOutdated: Bool
     let now: Date
-    let compact: Bool
+    let density: RowDensity
 
     // A reset that passed without a confirming read is history, not a fresh 0%.
     private var resetPassed: Bool { window.resetsAt.map { $0 <= now } ?? false }
@@ -257,9 +294,28 @@ private struct WindowRow: View {
 
     var body: some View {
         Group {
-            if compact { compactBody } else { fullBody }
+            switch density {
+            case .full: fullBody
+            case .compact: compactBody
+            case .mini: miniBody
+            }
         }
         .accessibilityElement(children: .combine)
+    }
+
+    // One line: label, bar, percentage. Reset times live in the larger sizes.
+    private var miniBody: some View {
+        HStack(spacing: 5) {
+            Text(window.shortLabel)
+                .font(.caption2.weight(.medium))
+                .frame(width: 30, alignment: .leading)
+            UsageBar(percent: window.usedPercent, tint: fill, height: 5)
+            Text("\(Int(window.usedPercent.rounded()))%")
+                .font(.caption2.weight(.semibold))
+                .monospacedDigit()
+                .foregroundStyle(isStale ? .secondary : .primary)
+                .frame(minWidth: 28, alignment: .trailing)
+        }
     }
 
     private var compactBody: some View {
@@ -339,6 +395,6 @@ struct UsageWidget: Widget {
         }
         .configurationDisplayName("Claude & Codex limits")
         .description("Used percentage, reset time, and reading age for each limit.")
-        .supportedFamilies([.systemMedium, .systemLarge])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }

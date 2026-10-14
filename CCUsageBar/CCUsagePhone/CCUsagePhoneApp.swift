@@ -10,13 +10,14 @@ struct CCUsagePhoneApp: App {
     }
 }
 
-// Shows the widget at both Home Screen sizes, using the preview readings.
+// Shows the widget at each Home Screen size, using the preview readings.
 // Replaced by the real companion screens once iCloud delivery exists.
 struct PreviewScreen: View {
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
+                    WidgetPreviewCard(title: "Small", family: .systemSmall, size: CGSize(width: 176, height: 176))
                     WidgetPreviewCard(title: "Medium", family: .systemMedium, size: CGSize(width: 377, height: 176))
                     WidgetPreviewCard(title: "Large", family: .systemLarge, size: CGSize(width: 377, height: 393))
                     SmokeSection()

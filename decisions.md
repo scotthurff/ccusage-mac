@@ -6,6 +6,12 @@
 - **Codex gauges are local-snapshot only**: they reflect the last local Codex turn, while the limits are account-wide. If Codex ever runs on another machine (e.g. the OpenClaw box), the gauges understate — and an expired local window shows a confident 0% that may be wrong. Consider a snapshot-age indicator past ~1h.
 - **Hardcoded `claude-code/2.0.0` User-Agent will age**: if Claude gauges ever silently blank (429s in the log), bump the version string in ClaudeLimitsFetcher first.
 
+## 2026-10-14: Small widget size
+
+**Decision**: Add the small Home Screen size. It shows one line per limit (label, bar, percentage) with no reset times and no reset-credit expiry; those stay in the medium and large sizes. A model-specific cap such as Fable appears in the small size only when it is closer to its limit than every provider-wide window. An outdated reading shows its age in gray without the word "Outdated", which does not fit.
+
+**Why**: Scott asked whether dropping the Fable line would allow a smaller widget. Width, not the Fable row, limits the small size. Hiding Fable entirely would mislead when Fable is the cap that actually stops work, so it shows only then.
+
 ## 2026-10-14: Codex reset credits and credit balance on the widget; medium size, always dark
 
 **Decision**: The widget also shows Codex's "Full reset" credits (count and next expiry) and its credit balance, under the Codex section. It supports the medium and large Home Screen sizes and is always dark. Scott chose these; he declined a separate "blocked" status and the history stats (daily tokens, lifetime tokens, streaks).
