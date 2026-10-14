@@ -16,6 +16,13 @@ Evidence for the plan's first unit (U1): signing, private iCloud delivery, and c
 | Current Codex account limits readable without a model turn | Met | See below |
 | Cloud or remote Codex work moves the live reading | Met for Scott's usage; cloud unverified | 2026-10-14: during Scott's ongoing Codex work, the live read showed 18% at 2:03:29 PM and the local log 18% at 2:03:27 PM. Work on this Mac, including phone sessions that control it, reaches the live read within seconds. Scott rarely uses cloud tasks; verify one when it happens. The final end-to-end test repeats this. |
 
+## End-to-end on the real devices
+
+- 2026-10-14: the signed menu bar app (team YT4ALW7VT7) replaced the ad-hoc copy in `/Applications`. The old copy is kept as `/Applications/CCUsageBar-old.app`. The login item still points to `/Applications/CCUsageBar.app`.
+- On first launch the new app collected both providers and published revision 5 to the private record, with nothing left pending.
+- Scott opened the updated phone app: it showed the Mac's readings. He added the "Claude & Codex limits" widget, which showed them too.
+- Still to observe: the widget refreshing in the background with the app closed, a pull-to-refresh keeping the Mac's reading age, and offline launch with cached data.
+
 ## Project shape
 
 - Targets: `CCUsageBar` (macOS 14+, unsandboxed), `CCUsagePhone` (iOS 17+), `CCUsageWidget` (WidgetKit extension embedded in the phone app).
