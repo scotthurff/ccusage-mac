@@ -20,12 +20,25 @@ enum MacSmokeCheck {
         var passed = true
         print("CCUsageBar smoke check (synthetic, temporary)")
 
-        let claude = await ClaudeLimitsFetcher().fetchLimits()
-        print("Claude live limits via Keychain: \(claude != nil ? "ok" : "FAILED")")
-        if claude == nil { passed = false }
+        // Prints limit values and dates only: never tokens, emails, or account ids.
+        let claude = await ClaudeLimitsFetcher().collect()
+        print("Claude live limits via Keychain: \(claude.observation != nil ? "ok" : "FAILED")")
+        print("Claude account identity signal: \(claude.accountKey != nil ? "present" : "missing")")
+        claude.observation.map(describe)
+        if claude.observation == nil { passed = false }
 
-        let codex = await CodexLimitsReader().fetchLimits()
-        print("Codex local log read: \(codex != nil ? "ok" : "no snapshot found")")
+        let started = Date()
+        let codex = await CodexLimitsClient().read()
+        let seconds = String(format: "%.1f", Date().timeIntervalSince(started))
+        switch codex {
+        case .success(let reading):
+            print("Codex current limits via app-server: ok in \(seconds)s")
+            print("Codex account identity signal: \(reading.accountKey != nil ? "present" : "missing")")
+            describe(reading.observation)
+        case .failure(let failure):
+            print("Codex current limits via app-server: FAILED (\(failure)) after \(seconds)s")
+            passed = false
+        }
 
         do {
             let usage = try await CCUsageRunner().fetchUsage(since: await AppState.sinceDateString())
@@ -47,6 +60,22 @@ enum MacSmokeCheck {
             passed = false
         }
         return passed ? 0 : 1
+    }
+
+    private static func describe(_ observation: QuotaObservation) {
+        let time = DateFormatter()
+        time.dateFormat = "yyyy-MM-dd HH:mm zzz"
+        print("  observed \(time.string(from: observation.observedAt))")
+        for window in observation.windows {
+            let reset = window.resetsAt.map { ", resets \(time.string(from: $0))" } ?? ""
+            let length = window.durationMinutes.map { "\($0) min" } ?? "unknown length"
+            print("  \(window.label) [\(window.scope.rawValue), \(length)]: \(window.usedPercent)% used\(reset)")
+        }
+        if let credits = observation.resetCredits {
+            let expiry = credits.nextExpiry.map { ", next expires \(time.string(from: $0))" } ?? ""
+            print("  full reset credits: \(credits.available) available\(expiry)")
+        }
+        if observation.creditBalance != nil { print("  credit balance: present") }
     }
 
     private static func delete() async -> Int32 {

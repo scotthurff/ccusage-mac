@@ -1,14 +1,22 @@
 import Foundation
 import os
 
-actor ClaudeLimitsFetcher {
+actor ClaudeLimitsFetcher: QuotaCollector {
+    static let source = "claude-oauth-usage"
     private static let logger = Logger(subsystem: "com.ccusagebar", category: "claudelimits")
 
     // Load-bearing: omitting a claude-code User-Agent routes requests into a
     // strictly rate-limited bucket (persistent 429s).
     private static let userAgent = "claude-code/2.0.0"
 
-    func fetchLimits() async -> ProviderLimits? {
+    // The account is read from local config even when the request fails, so
+    // a switched account never inherits the previous account's readings.
+    func collect() async -> QuotaCollectionResult {
+        let accountKey = Self.readAccountKey()
+        return QuotaCollectionResult(accountKey: accountKey, observation: await fetchObservation())
+    }
+
+    private func fetchObservation() async -> QuotaObservation? {
         guard let token = await resolveAccessToken() else {
             Self.logger.info("No usable Claude Code OAuth token; skipping usage fetch")
             return nil
@@ -34,7 +42,8 @@ actor ClaudeLimitsFetcher {
                 Self.logger.error("Usage endpoint returned status \(status)")
                 return nil
             }
-            return Self.parseUsage(data)
+            // Observed when the live response arrived.
+            return Self.parseUsage(data, observedAt: Date())
         } catch {
             Self.logger.error("Usage fetch failed: \(error.localizedDescription)")
             return nil
@@ -43,54 +52,70 @@ actor ClaudeLimitsFetcher {
 
     // MARK: - Response parsing
 
-    static func parseUsage(_ data: Data) -> ProviderLimits? {
+    static func parseUsage(_ data: Data, observedAt: Date) -> QuotaObservation? {
         guard let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else {
             Self.logger.error("Usage response was not a JSON object")
             return nil
         }
-        // Key present with null = no active window = 0% (display contract);
-        // key absent = schema surprise = unknown.
-        let fiveHour = parseWindow(obj["five_hour"])
-        let weekly = parseWindow(obj["seven_day"])
-        guard fiveHour != nil || weekly != nil else {
+        // Key present with null = no active window = a confirmed 0%;
+        // key absent or malformed = schema surprise = unknown (no window).
+        var windows: [QuotaWindow] = []
+        if let fiveHour = parseWindow(obj["five_hour"]) {
+            windows.append(fiveHourWindow(fiveHour.percent, resetsAt: fiveHour.resetsAt))
+        }
+        if let weekly = parseWindow(obj["seven_day"]) {
+            windows.append(weeklyWindow(weekly.percent, resetsAt: weekly.resetsAt))
+        }
+        guard !windows.isEmpty else {
             Self.logger.error("Usage response missing five_hour and seven_day")
             return nil
         }
-        return ProviderLimits(
-            fiveHour: fiveHour,
-            weekly: weekly,
-            scopedWeekly: parseScopedLimits(obj["limits"]),
-            fetchedAt: Date()
-        )
+        windows += scopedWindows(obj["limits"])
+        return QuotaObservation(source: source, observedAt: observedAt, windows: windows,
+                                resetCredits: nil, creditBalance: nil)
     }
 
     // Per-model weekly caps (e.g. Fable) from the `limits[]` array:
-    // {kind: "weekly_scoped", percent, resets_at, scope.model.display_name}
-    private static func parseScopedLimits(_ value: Any?) -> [ScopedLimit]? {
-        guard let entries = value as? [[String: Any]] else { return nil }
-        let scoped: [ScopedLimit] = entries.compactMap { entry in
+    // {kind: "weekly_scoped", percent, resets_at, scope.model.display_name}.
+    // The whole list is replaced on every read, so a removed cap disappears.
+    private static func scopedWindows(_ value: Any?) -> [QuotaWindow] {
+        var windows: [QuotaWindow] = []
+        for case let entry as [String: Any] in value as? [Any] ?? [] {
             guard entry["kind"] as? String == "weekly_scoped",
-                  let percent = entry["percent"] as? Double,
+                  let percent = QuotaValues.percent(entry["percent"]),
                   let scope = entry["scope"] as? [String: Any],
                   let model = scope["model"] as? [String: Any],
-                  let name = model["display_name"] as? String, !name.isEmpty else {
-                return nil
-            }
-            let resetsAt = (entry["resets_at"] as? String).flatMap(parseISO8601)
-            return ScopedLimit(name: name, window: LimitWindow(usedPercent: percent, resetsAt: resetsAt))
+                  let name = model["display_name"] as? String, !name.isEmpty else { continue }
+            let window = modelWindow(name, percent, resetsAt: (entry["resets_at"] as? String).flatMap(parseISO8601))
+            guard !windows.contains(where: { $0.id == window.id }) else { continue }
+            windows.append(window)
         }
-        return scoped.isEmpty ? nil : scoped
+        return windows
     }
 
-    private static func parseWindow(_ value: Any?) -> LimitWindow? {
+    // Stable ids and labels, shared with the legacy cache migration.
+    static func fiveHourWindow(_ percent: Double, resetsAt: Date?) -> QuotaWindow {
+        QuotaWindow(id: "claude:5h", label: "5-hour", durationMinutes: 300, usedPercent: percent,
+                    resetsAt: resetsAt, scope: .provider)
+    }
+
+    static func weeklyWindow(_ percent: Double, resetsAt: Date?) -> QuotaWindow {
+        QuotaWindow(id: "claude:7d", label: "Weekly", durationMinutes: 10_080, usedPercent: percent,
+                    resetsAt: resetsAt, scope: .provider)
+    }
+
+    static func modelWindow(_ name: String, _ percent: Double, resetsAt: Date?) -> QuotaWindow {
+        let slug = String(name.lowercased().map { $0.isLetter || $0.isNumber ? $0 : "-" })
+        return QuotaWindow(id: "claude:model:\(slug)", label: name, durationMinutes: 10_080, usedPercent: percent,
+                           resetsAt: resetsAt, scope: .model)
+    }
+
+    private static func parseWindow(_ value: Any?) -> (percent: Double, resetsAt: Date?)? {
         guard let value else { return nil }
-        if value is NSNull {
-            return LimitWindow(usedPercent: 0, resetsAt: nil)
-        }
+        if value is NSNull { return (0, nil) }
         guard let dict = value as? [String: Any],
-              let utilization = dict["utilization"] as? Double else { return nil }
-        let resetsAt = (dict["resets_at"] as? String).flatMap(parseISO8601)
-        return LimitWindow(usedPercent: utilization, resetsAt: resetsAt)
+              let utilization = QuotaValues.percent(dict["utilization"]) else { return nil }
+        return (utilization, (dict["resets_at"] as? String).flatMap(parseISO8601))
     }
 
     private static func parseISO8601(_ string: String) -> Date? {
@@ -100,7 +125,22 @@ actor ClaudeLimitsFetcher {
             of: #"\.\d+"#, with: "", options: .regularExpression)
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime]
-        return formatter.date(from: stripped)
+        return formatter.date(from: stripped).flatMap(QuotaValues.plausible)
+    }
+
+    // MARK: - Account identity (local only; never logged or published)
+
+    // Stable across token refreshes: the login token is not part of it.
+    static func accountKey(fromConfig data: Data) -> String? {
+        guard let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+              let oauth = obj["oauthAccount"] as? [String: Any],
+              let account = oauth["accountUuid"] as? String, !account.isEmpty else { return nil }
+        return QuotaAccountKey.make(.claude, [account, oauth["organizationUuid"] as? String ?? ""])
+    }
+
+    private static func readAccountKey() -> String? {
+        let url = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".claude.json")
+        return (try? Data(contentsOf: url)).flatMap(accountKey(fromConfig:))
     }
 
     // MARK: - Token resolution (read-only; token never logged, never persisted)
