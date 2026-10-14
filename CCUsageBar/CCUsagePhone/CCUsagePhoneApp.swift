@@ -4,12 +4,19 @@ import WidgetKit
 
 @main
 struct CCUsagePhoneApp: App {
-    @StateObject private var state = PhoneState(
-        cache: .appGroup(),
-        fetchLatest: { await CloudQuotaStore().fetchLatest() },
-        checkAccount: { await CloudAccountIdentity.current() },
-        reloadWidgets: { WidgetCenter.shared.reloadAllTimelines() })
+    @StateObject private var state = Self.makeState()
     @Environment(\.scenePhase) private var scenePhase
+
+    private static func makeState() -> PhoneState {
+        #if DEBUG
+        if let fixture = UITestFixture.stateIfRequested() { return fixture }
+        #endif
+        return PhoneState(
+            cache: .appGroup(),
+            fetchLatest: { await CloudQuotaStore().fetchLatest() },
+            checkAccount: { await CloudAccountIdentity.current() },
+            reloadWidgets: { WidgetCenter.shared.reloadAllTimelines() })
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -102,3 +109,113 @@ private struct WidgetPreviewCard: View {
         .frame(maxWidth: .infinity)
     }
 }
+
+#if DEBUG
+// TEST ONLY. Debug builds only; Release builds don't contain any of this.
+// The CCUsagePhoneUITests target launches the app with
+// `-uiTestFixture <name>` to swap iCloud for made-up readings: a cache in a
+// fresh temporary folder, a fake account check and fetch, and no widget
+// reloads. `-uiTestOpenURL <url>` also hands the app a link, as a widget
+// tap would. Without `-uiTestFixture` the app starts normally.
+@MainActor
+enum UITestFixture {
+    private enum Name: String {
+        case waitingForFirstReading  // iCloud on, nothing published yet
+        case iCloudOff               // no iCloud account on this iPhone
+        case populated               // empty cache; the fetch returns both providers
+        case failedRefresh           // two-hour-old readings saved; iCloud stops answering after launch
+        case manyLimits              // readings saved with enough Claude limits to push Codex off screen
+    }
+
+    static func stateIfRequested(arguments: [String] = ProcessInfo.processInfo.arguments) -> PhoneState? {
+        guard let index = arguments.firstIndex(of: "-uiTestFixture"), index + 1 < arguments.count else { return nil }
+        guard let name = Name(rawValue: arguments[index + 1]) else {
+            fatalError("Unknown UI test fixture \(arguments[index + 1])")
+        }
+        let now = Date()
+        let cache = freshCache()
+        var account = CloudAccountStatus.available(accountHash: "ui-test-fixture-account")
+        var fetch: @MainActor () -> CloudFetchResult = { .missing }
+        switch name {
+        case .waitingForFirstReading:
+            break
+        case .iCloudOff:
+            account = .noAccount
+        case .populated:
+            let published = result(now: now, age: 4 * 60)
+            fetch = { published }
+        case .failedRefresh:
+            let saved = result(now: now, age: 2 * 3600)
+            save(saved, to: cache, account: account)
+            // The refreshes the app starts on its own at launch get the same
+            // reading back. Any fetch from three seconds after launch fails,
+            // so a test that waits that long sees its own refresh fail.
+            fetch = { Date().timeIntervalSince(now) < 3 ? saved : .unavailable("UI test fixture: iCloud unreachable") }
+        case .manyLimits:
+            let saved = result(now: now, age: 4 * 60, extraClaudeLimits: 12)
+            save(saved, to: cache, account: account)
+            fetch = { saved }
+        }
+        let state = PhoneState(cache: cache, fetchLatest: { [fetch] in fetch() },
+                               checkAccount: { [account] in account }, reloadWidgets: {})
+        if let index = arguments.firstIndex(of: "-uiTestOpenURL"), index + 1 < arguments.count,
+           let url = URL(string: arguments[index + 1]) {
+            // Arrives once the screen is up, as onOpenURL does after a widget tap.
+            Task {
+                try? await Task.sleep(for: .milliseconds(500))
+                state.open(url)
+            }
+        }
+        return state
+    }
+
+    private static func freshCache() -> PhoneSnapshotCache {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("UITestFixture", isDirectory: true)
+        try? FileManager.default.removeItem(at: directory)
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        return PhoneSnapshotCache(directory: directory)
+    }
+
+    private static func save(_ result: CloudFetchResult, to cache: PhoneSnapshotCache, account: CloudAccountStatus) {
+        cache.bind(account: account)
+        _ = cache.commit(result, ticket: cache.beginFetch())
+    }
+
+    // Clearly fake readings, dated relative to launch so ages and resets stay put.
+    private static func result(now: Date, age: TimeInterval, extraClaudeLimits: Int = 0) -> CloudFetchResult {
+        let observedAt = now.addingTimeInterval(-age)
+        func window(_ id: String, _ label: String, _ minutes: Int, _ used: Double, resetIn: TimeInterval,
+                    scope: WindowScope = .provider) -> QuotaWindow {
+            QuotaWindow(id: id, label: label, durationMinutes: minutes, usedPercent: used,
+                        resetsAt: now.addingTimeInterval(resetIn), scope: scope)
+        }
+        func slot(_ provider: QuotaProvider, _ windows: [QuotaWindow],
+                  resetCredits: ResetCreditsInfo? = nil, creditBalance: Double? = nil) -> ProviderSlot {
+            ProviderSlot(provider: provider, generation: "fixture", acceptedAttempt: 1,
+                         observation: QuotaObservation(source: "ui-test-fixture", observedAt: observedAt, windows: windows,
+                                                       resetCredits: resetCredits, creditBalance: creditBalance),
+                         lastAttempt: CollectionAttempt(at: observedAt, outcome: .success))
+        }
+        var claude = [
+            window("claude:5h", "5-hour", 300, 23, resetIn: 2 * 3600),
+            window("claude:7d", "Weekly", 10_080, 41, resetIn: 3 * 86_400),
+            window("claude:fable", "Fable", 10_080, 9, resetIn: 3 * 86_400, scope: .model),
+        ]
+        for number in stride(from: 1, through: extraClaudeLimits, by: 1) {
+            let id = String(format: "claude:fixture-%02d", number)
+            claude.append(window(id, "Fixture model \(number)", 10_080, Double(number * 5),
+                                 resetIn: 4 * 86_400, scope: .model))
+        }
+        let codex = [window("codex:weekly", "Weekly", 10_080, 13, resetIn: 5 * 86_400)]
+        let snapshot = QuotaSnapshot(
+            version: QuotaSnapshot.currentVersion, revision: 1, publishedAt: observedAt,
+            providers: [slot(.claude, claude),
+                        slot(.codex, codex,
+                             resetCredits: ResetCreditsInfo(available: 2, nextExpiry: now.addingTimeInterval(6 * 86_400)),
+                             creditBalance: 1_234)])
+        return .snapshot(snapshot, CloudSnapshotMetadata(incarnation: "ui-test-fixture",
+                                                         incarnationCreatedAt: now.addingTimeInterval(-30 * 86_400),
+                                                         revision: 1))
+    }
+}
+#endif

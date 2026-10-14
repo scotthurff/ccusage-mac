@@ -34,6 +34,7 @@ struct ContentView: View {
                     }
                     .disabled(state.isRefreshing)
                     .accessibilityLabel(state.isRefreshing ? "Refreshing" : "Refresh")
+                    .accessibilityIdentifier("refresh")
                 }
             }
             .sheet(isPresented: $showingWidgetPreview) { PreviewScreen() }
@@ -52,6 +53,7 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: 6) {
                 if let checkedAt = state.checkedAt {
                     Text(PhoneText.checked(checkedAt, now: now))
+                        .accessibilityIdentifier("checked-icloud")
                 }
                 Text("Refresh gets the newest reading your Mac has published to iCloud. It doesn't make your Mac check again. Your Mac checks about every 15 minutes while it's awake.")
             }
@@ -93,6 +95,7 @@ private struct NoticeCard: View {
         .padding(prominent ? 20 : 14)
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("notice")
     }
 
     private var symbol: String {
@@ -132,6 +135,7 @@ private struct ProviderCard: View {
                     .foregroundStyle(.secondary)
             }
             .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("provider-header-\(provider.provider.rawValue)")
 
             if provider.observedAt != nil && provider.windows.isEmpty {
                 Text("No limits reported in this reading.").font(.subheadline).foregroundStyle(.secondary)
@@ -143,9 +147,11 @@ private struct ProviderCard: View {
                 Divider()
                 if let credits = provider.resetCredits {
                     Label(PhoneText.resetCredits(credits, now: now), systemImage: "arrow.counterclockwise.circle")
+                        .accessibilityIdentifier("reset-credits-\(provider.provider.rawValue)")
                 }
                 if let balance = provider.creditBalance {
                     Label(PhoneText.creditBalance(balance), systemImage: "creditcard")
+                        .accessibilityIdentifier("credit-balance-\(provider.provider.rawValue)")
                 }
             }
         }
@@ -173,6 +179,7 @@ private struct ProviderCard: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(PhoneText.accessibilityLabel(window, provider: provider, now: now))
+        .accessibilityIdentifier("window-row-\(provider.provider.rawValue)")
     }
 
     // Side by side normally; one above the other at accessibility text sizes.

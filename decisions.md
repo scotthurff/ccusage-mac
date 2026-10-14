@@ -12,6 +12,12 @@
 - **Codex gauges are local-snapshot only**: they reflect the last local Codex turn, while the limits are account-wide. If Codex ever runs on another machine (e.g. the OpenClaw box), the gauges understate — and an expired local window shows a confident 0% that may be wrong. Consider a snapshot-age indicator past ~1h.
 - **Hardcoded `claude-code/2.0.0` User-Agent will age**: if Claude gauges ever silently blank (429s in the log), bump the version string in ClaudeLimitsFetcher first.
 
+## 2026-10-14: Phone UI tests use a Debug-only fixture hook
+
+**Decision**: `CCUsagePhoneApp.swift` has a `UITestFixture` hook compiled only in Debug builds and active only with the launch argument `-uiTestFixture <name>`. It builds the app's state from a temporary cache and fake iCloud calls with clearly fake values. `-uiTestOpenURL` drives provider links, because the `ccusage` scheme is not registered. The failed-refresh fixture answers fetches normally for the first 3 seconds after launch and fails afterwards, because the app refreshes on its own once or twice at launch.
+
+**Why**: The plan's final unit asks for deterministic setup, refresh, and link flows without real accounts. Release builds contain no trace of the hook. The phone is currently installed from Debug builds, where the hook exists but stays off without the argument.
+
 ## 2026-10-14: Mac publishing and the real widget
 
 **Decision (publishing)**: The write half of the iCloud record lives in `Shared/CloudQuotaWriter.swift`, Mac-only, rather than inside `CloudQuotaStore.swift`. That kept the phone and widget from compiling code that was being edited during parallel work. When merging with the server record, each provider keeps its later state. Within one account context the higher accepted attempt wins, and a tie keeps the server's copy. Revisions are chosen only after reading the server, and a missing record gets a new incarnation. There are no timer retries; a failed or throttled upload waits for the next refresh, so the phone can lag up to about 15 minutes. If the server holds a newer snapshot format, the Mac stops overwriting it. Builds without the iCloud entitlement skip publishing instead of crashing. Publisher state lives under `quotaPublisherState`.
