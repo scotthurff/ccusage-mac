@@ -38,6 +38,15 @@ Steps once signing works:
 4. Sign the phone out of iCloud, or point it at a different environment. It must show a failure, not a reading.
 5. Run `CCUsageBar --smoke-delete` to remove the record.
 
+## Simulator check (packaging only)
+
+2026-10-14, iPhone 17 Pro Max simulator, iOS 26.5, unsigned team. This does not count toward the signed checks above.
+
+- `CCUsagePhone` builds with the widget embedded under `PlugIns/`. Both binaries carry the iCloud container entitlement.
+- The app launches. With no iCloud account in the simulator it shows "no iCloud account" and "Fetch failed: This request requires an authenticated account". It shows no reading, which is the required failure behavior.
+- iOS registered the widget: the system logged its description and its single large size, and started the extension process.
+- Adding the widget by simulated taps failed. The simulator's widget picker logged "No suggestions file found" and closed. That is a simulator picker problem, not the extension. Retry on the real phone.
+
 ## Codex current account limits
 
 Validated 2026-10-14 against Codex CLI 0.154.0 (`~/.local/bin/codex`, a link into `~/.codex/packages/standalone/current/bin/codex`).
