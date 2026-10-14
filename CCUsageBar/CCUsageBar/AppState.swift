@@ -20,6 +20,7 @@ class AppState: ObservableObject {
     private let runner = CCUsageRunner()
     private let defaults: UserDefaults
     private let collectors: [QuotaProvider: QuotaCollector]
+    private let publisher: QuotaPublisher?
     private let now: () -> Date
     // Local hashes of each provider's signed-in account. Never published.
     private var accountKeys: [QuotaProvider: String] = [:]
@@ -41,10 +42,14 @@ class AppState: ObservableObject {
     init(defaults: UserDefaults = .standard,
          claudeCollector: QuotaCollector = ClaudeLimitsFetcher(),
          codexCollector: QuotaCollector = CodexLimitsClient(),
+         publisher: QuotaPublisher? = nil,
          now: @escaping () -> Date = { Date() },
          startsAutomatically: Bool = true) {
         self.defaults = defaults
         self.collectors = [.claude: claudeCollector, .codex: codexCollector]
+        // The running app publishes to iCloud. Tests and checks that don't
+        // start automatically publish only through a publisher they pass in.
+        self.publisher = publisher ?? (startsAutomatically ? QuotaPublisher.live(defaults: defaults) : nil)
         self.now = now
         loadCache()
         loadQuotaState()
@@ -118,6 +123,7 @@ class AppState: ObservableObject {
         async let codex: Void = collect(.codex)
         _ = await (claude, codex)
         hasAttemptedLimitsFetch = true
+        publishQuotas()
     }
 
     private func refreshUsage() async {
@@ -192,6 +198,13 @@ class AppState: ObservableObject {
         accountKeys[provider] = nil
         inFlight[provider] = nil
         saveQuotaState()
+        publishQuotas()
+    }
+
+    // Hands a copy of the current slots to the publisher without waiting for
+    // iCloud. Publishing never changes a slot or the menu bar.
+    private func publishQuotas() {
+        publisher?.submit(providerSlots)
     }
 
     func slot(_ provider: QuotaProvider) -> ProviderSlot {
