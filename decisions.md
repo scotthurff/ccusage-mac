@@ -1,5 +1,11 @@
 # Decisions
 
+## 2026-10-14: Superseded — local-log Codex limits and expiry-to-zero
+
+**Decision**: Two 2026-07-02 entries below no longer describe the app. "Official rate-limit percentages — Codex from session files" is replaced by the live `codex app-server` read; `CodexLimitsReader.swift` was deleted. "Expiry-zeroing lives in one display-time gate" is replaced by the shared presentation rule in `Shared/QuotaPresentation.swift`: a passed reset keeps the last value, marked unconfirmed, until a new reading arrives. Readings also go outdated after 60 minutes or after a failed attempt. The Claude OAuth half of the first entry, and the hold-last-known failure policy, still apply.
+
+**Why**: Local session files cannot see cloud or other-machine Codex use, and an expired window showed a confident 0% that could be wrong. Both mattered once the readings went to the phone, where you choose a model without the Mac in front of you.
+
 ## Deferred polish (from 2026-07-02 review; not yet built)
 
 - **Weekly reset weekday is ambiguous within 24h**: `wk 94% ·Mon` rendered on a Monday could mean hours or a week away. Fix: switch the weekly reset to clock time when it's within the next 24 hours.
