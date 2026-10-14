@@ -11,10 +11,10 @@ Evidence for the plan's first unit (U1): signing, private iCloud delivery, and c
 | iPhone connected, trusted, Developer Mode on | Met | 2026-10-14: Developer Mode on; phone registered to the team by a device build; signed app installed with `xcrun devicectl device install app` |
 | Phone iOS version supported by installed Xcode | Met | iPhone on iOS 26.6.2; Xcode 26.6 lists it as a run destination |
 | Signed Mac app writes the synthetic iCloud record, sandbox off | Met | 2026-10-14: signed Release build has the container entitlement and no sandbox key. First write failed with "Bad Container" right after Xcode registered the container; about ten minutes later the write and read-back succeeded. |
-| Phone app and widget read the record, widget with app closed | Partly met | 2026-10-14: Mac wrote nonce 4235041E; the phone app on the physical iPhone showed the same nonce (confirmed by Scott). Widget check with the app closed still to run. |
+| Phone app and widget read the record, widget with app closed | Met | 2026-10-14: the phone app showed the Mac's nonce 4235041E. With the app confirmed not running, the Mac wrote A484BA7B; Scott re-added the "CCUsage iCloud test" widget and it showed A484BA7B. The app was running again by the time of a later check, but the app has no channel to the widget (no shared App Group, no reload call), so the value can only have come from the extension's own iCloud fetch. |
 | Mac collectors still work under the new signature | Met | 2026-10-14: smoke check reported the Claude Keychain read, the Codex log read, and the ccusage process all ok under Apple Development signing |
 | Current Codex account limits readable without a model turn | Met | See below |
-| Cloud or remote Codex work moves the live reading | Open | Baseline recorded; waiting for ordinary cloud or remote work |
+| Cloud or remote Codex work moves the live reading | Open | 2026-10-14: live read 13% at 11:26 AM, 15% at 1:26 PM. Local logs also reached 15% from turns on this Mac, so this change is local and does not count. Waiting for ordinary cloud or remote work. |
 
 ## Project shape
 
