@@ -5,41 +5,75 @@ import WidgetKit
 struct CCUsagePhoneApp: App {
     var body: some Scene {
         WindowGroup {
-            SmokeView()
+            PreviewScreen()
         }
     }
 }
 
-// TEMPORARY feasibility screen (plan U1). Shows the synthetic CloudKit record
-// written by the Mac smoke check. Replaced by the real companion UI later.
-struct SmokeView: View {
+// Shows the widget at both Home Screen sizes, using the preview readings.
+// Replaced by the real companion screens once iCloud delivery exists.
+struct PreviewScreen: View {
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    WidgetPreviewCard(title: "Medium", family: .systemMedium, size: CGSize(width: 377, height: 176))
+                    WidgetPreviewCard(title: "Large", family: .systemLarge, size: CGSize(width: 377, height: 393))
+                    SmokeSection()
+                }
+                .padding()
+            }
+            .navigationTitle("CCUsage")
+        }
+    }
+}
+
+private struct WidgetPreviewCard: View {
+    let title: String
+    let family: WidgetFamily
+    let size: CGSize
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.secondary)
+            UsageWidgetContent(
+                entry: UsageEntry(date: .now, providers: UsagePreview.providers, isPreview: true),
+                family: family
+            )
+            .padding(16)
+            .frame(width: size.width, height: size.height)
+            .background(UsagePalette.background)
+            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+// TEMPORARY feasibility check (plan U1). Shows the synthetic CloudKit record
+// written by the Mac smoke check.
+private struct SmokeSection: View {
     @State private var account = "checking…"
     @State private var result = "not fetched"
     @State private var fetching = false
 
     var body: some View {
-        NavigationStack {
-            List {
-                Section("iCloud") {
-                    LabeledContent("Account", value: account)
-                }
-                Section("Synthetic record from Mac") {
-                    Text(result).font(.body.monospaced())
-                }
-                Section {
-                    Button(fetching ? "Fetching…" : "Fetch now") {
-                        Task { await fetch() }
-                    }
-                    .disabled(fetching)
-                }
-                Section {
-                    Text("Synthetic smoke test. Not usage data.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
+        VStack(alignment: .leading, spacing: 6) {
+            Text("iCloud delivery test (temporary)")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Text("Account: \(account)")
+                .font(.caption)
+            Text(result)
+                .font(.caption.monospaced())
+            Button(fetching ? "Fetching…" : "Fetch test record") {
+                Task { await fetch() }
             }
-            .navigationTitle("CCUsage smoke test")
+            .font(.caption)
+            .disabled(fetching)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .task { await fetch() }
     }
 

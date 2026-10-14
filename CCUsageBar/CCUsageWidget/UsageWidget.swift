@@ -9,6 +9,7 @@ import WidgetKit
 struct UsageWindow: Identifiable {
     let id: String
     let label: String
+    let shortLabel: String
     let usedPercent: Double
     let resetsAt: Date?
     let weekly: Bool
@@ -33,6 +34,7 @@ enum UsagePalette {
     static let claude = Color(red: 0.85, green: 0.45, blue: 0.25)
     static let fable = Color(red: 0.63, green: 0.28, blue: 0.13)
     static let codex = Color(red: 0.25, green: 0.58, blue: 0.65)
+    static let background = Color(white: 0.11)
 }
 
 enum UsagePreview {
@@ -44,11 +46,11 @@ enum UsagePreview {
             tint: UsagePalette.claude,
             observedAt: Date(timeIntervalSinceReferenceDate: 813_696_141),
             windows: [
-                UsageWindow(id: "claude-5h", label: "5-hour", usedPercent: 2,
+                UsageWindow(id: "claude-5h", label: "5-hour", shortLabel: "5h", usedPercent: 2,
                             resetsAt: Date(timeIntervalSinceReferenceDate: 813_713_399), weekly: false, tint: UsagePalette.claude),
-                UsageWindow(id: "claude-wk", label: "Weekly", usedPercent: 17,
+                UsageWindow(id: "claude-wk", label: "Weekly", shortLabel: "Wk", usedPercent: 17,
                             resetsAt: Date(timeIntervalSinceReferenceDate: 813_967_199), weekly: true, tint: UsagePalette.claude),
-                UsageWindow(id: "claude-fable-wk", label: "Fable weekly", usedPercent: 0,
+                UsageWindow(id: "claude-fable-wk", label: "Fable weekly", shortLabel: "Fable", usedPercent: 0,
                             resetsAt: Date(timeIntervalSinceReferenceDate: 813_967_200), weekly: true, tint: UsagePalette.fable),
             ]
         ),
@@ -57,7 +59,7 @@ enum UsagePreview {
             tint: UsagePalette.codex,
             observedAt: Date(timeIntervalSinceReferenceDate: 813_695_200),
             windows: [
-                UsageWindow(id: "codex-wk", label: "Weekly", usedPercent: 13,
+                UsageWindow(id: "codex-wk", label: "Weekly", shortLabel: "Wk", usedPercent: 13,
                             resetsAt: Date(timeIntervalSinceReferenceDate: 814_166_108), weekly: true, tint: UsagePalette.codex),
             ]
         ),
@@ -92,63 +94,115 @@ enum UsageFreshness {
 }
 
 struct UsageWidgetView: View {
+    @Environment(\.widgetFamily) private var family
     let entry: UsageEntry
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            ForEach(entry.providers) { provider in
-                ProviderSection(provider: provider, now: entry.date)
+        UsageWidgetContent(entry: entry, family: family)
+            .containerBackground(UsagePalette.background, for: .widget)
+    }
+}
+
+// Shared with the companion app, which previews both sizes.
+struct UsageWidgetContent: View {
+    let entry: UsageEntry
+    let family: WidgetFamily
+
+    // Always dark, regardless of the phone's appearance setting.
+    var body: some View {
+        content.environment(\.colorScheme, .dark)
+    }
+
+    @ViewBuilder private var content: some View {
+        if family == .systemMedium {
+            // Providers side by side with one-line rows.
+            HStack(alignment: .top, spacing: 16) {
+                ForEach(entry.providers) { provider in
+                    ProviderSection(provider: provider, now: entry.date, compact: true)
+                        .frame(maxWidth: .infinity, alignment: .topLeading)
+                }
             }
-            Spacer(minLength: 0)
-            if entry.isPreview {
-                Text("Preview · sample readings, not live")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
+            .frame(maxHeight: .infinity, alignment: .top)
+            .overlay(alignment: .bottomTrailing) {
+                if entry.isPreview {
+                    Text("Preview")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+        } else {
+            VStack(alignment: .leading, spacing: 16) {
+                ForEach(entry.providers) { provider in
+                    ProviderSection(provider: provider, now: entry.date, compact: false)
+                }
+                Spacer(minLength: 0)
+                if entry.isPreview {
+                    Text("Preview · sample readings, not live")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
             }
         }
-        .containerBackground(.background, for: .widget)
     }
 }
 
 private struct ProviderSection: View {
     let provider: ProviderReading
     let now: Date
+    let compact: Bool
 
     private var isOutdated: Bool {
         now.timeIntervalSince(provider.observedAt) >= UsageFreshness.outdatedAfter
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(provider.name)
-                    .font(.headline)
-                    .foregroundStyle(isOutdated ? Color.secondary : provider.tint)
-                Spacer()
-                if isOutdated {
-                    Text("Outdated")
-                        .font(.caption2.weight(.semibold))
+        VStack(alignment: .leading, spacing: compact ? 7 : 10) {
+            if compact {
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(provider.name)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(isOutdated ? Color.secondary : provider.tint)
+                    Spacer(minLength: 2)
+                    (isOutdated ? Text("Outdated · \(ageText)") : ageText)
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                 }
-                ageText
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .monospacedDigit()
+            } else {
+                header
             }
             ForEach(provider.windows) { window in
-                WindowRow(window: window, providerOutdated: isOutdated, now: now)
+                WindowRow(window: window, providerOutdated: isOutdated, now: now, compact: compact)
             }
+        }
+    }
+
+    private var header: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(provider.name)
+                .font(.headline)
+                .foregroundStyle(isOutdated ? Color.secondary : provider.tint)
+            Spacer()
+            if isOutdated {
+                Text("Outdated")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            ageText
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
         }
     }
 
     // Self-updating age in whole minutes; iOS 17 falls back to the
     // seconds-level relative style.
-    @ViewBuilder private var ageText: some View {
+    private var ageText: Text {
         if #available(iOS 18.0, *) {
-            Text(.currentDate, format: .reference(to: provider.observedAt, allowedFields: [.minute, .hour, .day]))
-        } else {
-            Text("\(provider.observedAt, style: .relative) ago")
+            return Text(.currentDate, format: .reference(to: provider.observedAt, allowedFields: [.minute, .hour, .day]))
         }
+        return Text("\(provider.observedAt, style: .relative) ago")
     }
 }
 
@@ -156,6 +210,7 @@ private struct WindowRow: View {
     let window: UsageWindow
     let providerOutdated: Bool
     let now: Date
+    let compact: Bool
 
     // A reset that passed without a confirming read is history, not a fresh 0%.
     private var resetPassed: Bool { window.resetsAt.map { $0 <= now } ?? false }
@@ -167,6 +222,35 @@ private struct WindowRow: View {
     }
 
     var body: some View {
+        Group {
+            if compact { compactBody } else { fullBody }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private var compactBody: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text(window.shortLabel)
+                    .font(.caption.weight(.medium))
+                if let resetsAt = window.resetsAt {
+                    Text(resetPassed ? "reset passed" : resetText(resetsAt))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                }
+                Spacer(minLength: 2)
+                Text("\(Int(window.usedPercent.rounded()))% used")
+                    .font(.caption.weight(.semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(isStale ? .secondary : .primary)
+            }
+            UsageBar(percent: window.usedPercent, tint: fill, height: 5)
+        }
+    }
+
+    private var fullBody: some View {
         VStack(alignment: .leading, spacing: 5) {
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Text(window.label)
@@ -185,7 +269,6 @@ private struct WindowRow: View {
             }
             UsageBar(percent: window.usedPercent, tint: fill)
         }
-        .accessibilityElement(children: .combine)
     }
 
     private func resetText(_ date: Date) -> String {
@@ -198,6 +281,7 @@ private struct WindowRow: View {
 private struct UsageBar: View {
     let percent: Double
     let tint: Color
+    var height: CGFloat = 8
 
     var body: some View {
         GeometryReader { geometry in
@@ -206,11 +290,11 @@ private struct UsageBar: View {
                 if percent > 0 {
                     Capsule()
                         .fill(tint)
-                        .frame(width: max(6, geometry.size.width * min(percent, 100) / 100))
+                        .frame(width: max(height, geometry.size.width * min(percent, 100) / 100))
                 }
             }
         }
-        .frame(height: 8)
+        .frame(height: height)
     }
 }
 
@@ -221,6 +305,6 @@ struct UsageWidget: Widget {
         }
         .configurationDisplayName("Claude & Codex limits")
         .description("Used percentage, reset time, and reading age for each limit.")
-        .supportedFamilies([.systemLarge])
+        .supportedFamilies([.systemMedium, .systemLarge])
     }
 }

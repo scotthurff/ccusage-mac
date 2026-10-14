@@ -21,6 +21,7 @@
 		A10012 /* CloudKitSmoke.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40001; };
 		A20001 /* CCUsagePhoneApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20001; };
 		A20002 /* CloudKitSmoke.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40001; };
+		A20004 /* UsageWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = B30005; };
 		A20003 /* CCUsageWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B30004; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A30001 /* CCUsageWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = B30001; };
 		A30002 /* CloudKitSmoke.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40001; };
@@ -280,6 +281,7 @@
 			files = (
 				A20001 /* CCUsagePhoneApp.swift in Sources */,
 				A20002 /* CloudKitSmoke.swift in Sources */,
+				A20004 /* UsageWidget.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -314,6 +316,7 @@
 				CLANG_ENABLE_OBJC_ARC = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = YT4ALW7VT7;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_DYNAMIC_NO_PIC = NO;
@@ -341,6 +344,7 @@
 				CLANG_ENABLE_OBJC_ARC = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = YT4ALW7VT7;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
