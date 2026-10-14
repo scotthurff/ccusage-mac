@@ -6,6 +6,16 @@
 - **Codex gauges are local-snapshot only**: they reflect the last local Codex turn, while the limits are account-wide. If Codex ever runs on another machine (e.g. the OpenClaw box), the gauges understate — and an expired local window shows a confident 0% that may be wrong. Consider a snapshot-age indicator past ~1h.
 - **Hardcoded `claude-code/2.0.0` User-Agent will age**: if Claude gauges ever silently blank (429s in the log), bump the version string in ClaudeLimitsFetcher first.
 
+## 2026-10-14: Live Mac collectors and the phone's shared cache
+
+**Decision (Mac)**: Codex limits come from a short, read-only `codex app-server` session, not local logs. That supersedes the "Codex gauges are local-snapshot only" note above. The binary path is found with `zsh -lc 'whence -p codex'`, because Scott's shell defines a `codex` function. It is cached under `codexBinaryPath`, with `~/.local/bin`, `/opt/homebrew/bin`, and `/usr/local/bin` as fallbacks. Only ChatGPT logins are supported. Codex buckets other than the main `codex` one become model-specific rows labeled from `limitName`. In the menu bar, outdated numbers are left out of the compact hint and the red warning, and a passed reset shows the old number struck through in gray. The legacy cache keys stay in place, because the installed `/Applications` copy shares this app's settings storage.
+
+**Decision (phone)**: The app and widget share one JSON file in the `group.com.ccusagebar` App Group. It holds the hashed iCloud account, a generation counter, the snapshot with its cloud ordering data, and widget page state. Every change happens inside one coordinated write. The phone skips a fetch when it cannot confirm the iCloud account, and keeps its dated data. Restricted or temporarily unavailable accounts never clear data. The first account binding adopts whatever is already cached. The widget is asked to reload only when the cache actually changed. Wording: "Read on your Mac 12 minutes ago"; reset times read "today", a weekday within six days, or a date after that.
+
+**Why**: These follow the plan's KTD5, KTD7, and KTD10. They were the workers' choices where the plan left room, and they were accepted after the combined tests, signed builds, and a live read passed.
+
+**Codex cloud check**: Scott rarely uses Codex cloud tasks. Work on this Mac, including phone sessions that control it, reaches the live reading within seconds (18% live vs 18% in the logs, two seconds apart, on 2026-10-14). Cloud tasks remain unverified; check one when it happens, and the final end-to-end test repeats it.
+
 ## 2026-10-14: Small widget size
 
 **Decision**: Add the small Home Screen size. It shows one line per limit (label, bar, percentage) with no reset times and no reset-credit expiry; those stay in the medium and large sizes. A model-specific cap such as Fable appears in the small size only when it is closer to its limit than every provider-wide window. An outdated reading shows its age in gray without the word "Outdated", which does not fit.

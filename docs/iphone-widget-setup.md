@@ -14,7 +14,7 @@ Evidence for the plan's first unit (U1): signing, private iCloud delivery, and c
 | Phone app and widget read the record, widget with app closed | Met | 2026-10-14: the phone app showed the Mac's nonce 4235041E. With the app confirmed not running, the Mac wrote A484BA7B; Scott re-added the "CCUsage iCloud test" widget and it showed A484BA7B. The app was running again by the time of a later check, but the app has no channel to the widget (no shared App Group, no reload call), so the value can only have come from the extension's own iCloud fetch. |
 | Mac collectors still work under the new signature | Met | 2026-10-14: smoke check reported the Claude Keychain read, the Codex log read, and the ccusage process all ok under Apple Development signing |
 | Current Codex account limits readable without a model turn | Met | See below |
-| Cloud or remote Codex work moves the live reading | Open | 2026-10-14: live read 13% at 11:26 AM, 15% at 1:26 PM. Local logs also reached 15% from turns on this Mac, so this change is local and does not count. Waiting for ordinary cloud or remote work. |
+| Cloud or remote Codex work moves the live reading | Met for Scott's usage; cloud unverified | 2026-10-14: during Scott's ongoing Codex work, the live read showed 18% at 2:03:29 PM and the local log 18% at 2:03:27 PM. Work on this Mac, including phone sessions that control it, reaches the live read within seconds. Scott rarely uses cloud tasks; verify one when it happens. The final end-to-end test repeats this. |
 
 ## Project shape
 
