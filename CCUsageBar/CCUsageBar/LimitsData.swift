@@ -1,4 +1,3 @@
-import CryptoKit
 import Foundation
 
 // MARK: - Collection results
@@ -19,8 +18,7 @@ protocol QuotaCollector: Sendable {
 enum QuotaAccountKey {
     // One-way, so raw account identifiers are never stored or published.
     static func make(_ provider: QuotaProvider, _ parts: [String]) -> String {
-        let joined = ([provider.rawValue] + parts).joined(separator: "|")
-        return SHA256.hash(data: Data(joined.utf8)).map { String(format: "%02x", $0) }.joined()
+        AccountHash.sha256Hex(([provider.rawValue] + parts).joined(separator: "|"))
     }
 }
 
@@ -37,7 +35,7 @@ enum QuotaValues {
 
     static func percent(_ value: Any?) -> Double? {
         guard let percent = number(value)?.doubleValue else { return nil }
-        return percent.isFinite && (0...1_000).contains(percent) ? percent : nil
+        return percent.isFinite && QuotaSnapshot.usedPercentRange.contains(percent) ? percent : nil
     }
 
     static func date(unixSeconds value: Any?) -> Date? {
@@ -46,17 +44,12 @@ enum QuotaValues {
 
     static func plausible(_ date: Date) -> Date? {
         let seconds = date.timeIntervalSince1970
-        return seconds.isFinite && (1_577_836_800...4_102_444_800).contains(seconds) ? date : nil
+        return seconds.isFinite && QuotaSnapshot.plausibleDates.contains(date) ? date : nil
     }
 
     // "5-hour", "Weekly", or the reported length in plain units.
     static func durationLabel(_ minutes: Int?) -> String {
-        guard let minutes else { return "Limit" }
-        if abs(minutes - 300) <= 1 { return "5-hour" }
-        if abs(minutes - 10_080) <= 1 { return "Weekly" }
-        if minutes % 1_440 == 0 { return "\(minutes / 1_440)-day" }
-        if minutes % 60 == 0 { return "\(minutes / 60)-hour" }
-        return "\(minutes)-minute"
+        minutes.map { QuotaWindow.lengthName(minutes: $0) } ?? "Limit"
     }
 }
 
@@ -194,7 +187,7 @@ struct ProviderLimits: Codable {
         guard let observedAt = QuotaValues.plausible(fetchedAt),
               observedAt <= now.addingTimeInterval(QuotaPresentation.futureTolerance) else { return nil }
         func valid(_ window: LimitWindow?) -> (percent: Double, resetsAt: Date?)? {
-            guard let window, window.usedPercent.isFinite, (0...1_000).contains(window.usedPercent) else { return nil }
+            guard let window, window.usedPercent.isFinite, QuotaSnapshot.usedPercentRange.contains(window.usedPercent) else { return nil }
             return (window.usedPercent, window.resetsAt.flatMap(QuotaValues.plausible))
         }
         var windows: [QuotaWindow] = []

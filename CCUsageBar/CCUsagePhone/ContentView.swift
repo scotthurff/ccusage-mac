@@ -119,7 +119,7 @@ private struct ProviderCard: View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 stacked {
-                    Text(PhoneText.providerName(provider.provider))
+                    Text(provider.provider.displayName)
                         .font(.title3.weight(.semibold))
                         .foregroundStyle(provider.freshness == .current ? Self.tint(for: provider.provider) : Color.secondary)
                 } trailing: {

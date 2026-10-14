@@ -1,4 +1,5 @@
 import CloudKit
+import CryptoKit
 import Foundation
 
 // The single private CloudKit record that carries the latest snapshot.
@@ -66,17 +67,7 @@ struct CloudQuotaStore {
     // Returns within the timeout even if the fetch ignores cancellation.
     func fetchLatest() async -> CloudFetchResult {
         let fetcher = self.fetcher
-        let timeout = self.timeout
-        return await withCheckedContinuation { continuation in
-            let gate = ResumeOnce(continuation)
-            let work = Task {
-                gate.resume(with: await Self.fetchAndMap(fetcher))
-            }
-            Task {
-                try? await Task.sleep(for: timeout)
-                if gate.resume(with: .timedOut) { work.cancel() }
-            }
-        }
+        return await Deadline.race(after: timeout, fallback: .timedOut) { await Self.fetchAndMap(fetcher) }
     }
 
     private static func fetchAndMap(_ fetcher: CloudRecordFetching) async -> CloudFetchResult {
@@ -113,22 +104,49 @@ struct CloudQuotaStore {
     }
 }
 
-// Lets the fetch and the timer race; whichever finishes first wins.
-private final class ResumeOnce: @unchecked Sendable {
-    private let lock = NSLock()
-    private var continuation: CheckedContinuation<CloudFetchResult, Never>?
+// MARK: - Helpers shared by every target
 
-    init(_ continuation: CheckedContinuation<CloudFetchResult, Never>) {
-        self.continuation = continuation
+enum Deadline {
+    // Returns the work's result, or the fallback once the time runs out, even
+    // if the work ignores cancellation. Whichever side loses is cancelled.
+    static func race<T>(after timeout: Duration, fallback: T, _ work: @escaping () async -> T) async -> T {
+        await withCheckedContinuation { continuation in
+            let gate = FirstResult(continuation)
+            let task = Task { await work() }
+            let timer = Task {
+                try? await Task.sleep(for: timeout)
+                if gate.resume(with: fallback) { task.cancel() }
+            }
+            Task {
+                let value = await task.value
+                if gate.resume(with: value) { timer.cancel() }
+            }
+        }
     }
 
-    @discardableResult
-    func resume(with result: CloudFetchResult) -> Bool {
-        lock.lock()
-        let pending = continuation
-        continuation = nil
-        lock.unlock()
-        pending?.resume(returning: result)
-        return pending != nil
+    private final class FirstResult<T>: @unchecked Sendable {
+        private let lock = NSLock()
+        private var continuation: CheckedContinuation<T, Never>?
+
+        init(_ continuation: CheckedContinuation<T, Never>) {
+            self.continuation = continuation
+        }
+
+        @discardableResult
+        func resume(with value: T) -> Bool {
+            lock.lock()
+            let pending = continuation
+            continuation = nil
+            lock.unlock()
+            pending?.resume(returning: value)
+            return pending != nil
+        }
+    }
+}
+
+enum AccountHash {
+    // One-way, so raw account identifiers are never stored or published.
+    static func sha256Hex(_ text: String) -> String {
+        SHA256.hash(data: Data(text.utf8)).map { String(format: "%02x", $0) }.joined()
     }
 }

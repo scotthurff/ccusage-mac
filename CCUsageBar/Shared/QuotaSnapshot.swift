@@ -20,6 +20,14 @@ struct QuotaProvider: RawRepresentable, Codable, Hashable {
     static let claude = QuotaProvider(rawValue: "claude")
     static let codex = QuotaProvider(rawValue: "codex")
 
+    var displayName: String {
+        switch self {
+        case .claude: "Claude"
+        case .codex: "Codex"
+        default: rawValue.capitalized
+        }
+    }
+
     init(from decoder: Decoder) throws {
         rawValue = try decoder.singleValueContainer().decode(String.self)
     }
@@ -106,8 +114,11 @@ extension JSONDecoder {
 }
 
 extension QuotaSnapshot {
-    private static let earliestDate = Date(timeIntervalSince1970: 1_577_836_800)  // 2020-01-01
-    private static let latestDate = Date(timeIntervalSince1970: 4_102_444_800)    // 2100-01-01
+    // 2020-01-01 through 2100-01-01. Collectors use the same bounds, so a
+    // collected reading can always be published.
+    static let plausibleDates = Date(timeIntervalSince1970: 1_577_836_800)...Date(timeIntervalSince1970: 4_102_444_800)
+    // Up to 1000% tolerates a provider reporting overage.
+    static let usedPercentRange: ClosedRange<Double> = 0...1_000
 
     func encoded() throws -> Data {
         try validate()
@@ -155,8 +166,7 @@ extension QuotaSnapshot {
                 if let expiry = credits.nextExpiry { try Self.check(expiry, "nextExpiry") }
             }
             for window in observation.windows {
-                // Up to 1000% tolerates a provider reporting overage.
-                guard window.usedPercent.isFinite, (0...1_000).contains(window.usedPercent) else {
+                guard window.usedPercent.isFinite, Self.usedPercentRange.contains(window.usedPercent) else {
                     throw SnapshotDecodeError.invalidValue("usedPercent")
                 }
                 if let minutes = window.durationMinutes, minutes <= 0 {
@@ -169,7 +179,7 @@ extension QuotaSnapshot {
 
     private static func check(_ date: Date, _ field: String) throws {
         let seconds = date.timeIntervalSince1970
-        guard seconds.isFinite, date >= earliestDate, date <= latestDate else {
+        guard seconds.isFinite, plausibleDates.contains(date) else {
             throw SnapshotDecodeError.invalidValue(field)
         }
     }

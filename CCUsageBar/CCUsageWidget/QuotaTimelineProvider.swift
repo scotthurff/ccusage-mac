@@ -61,7 +61,7 @@ struct QuotaTimelineLoader {
             }
             if let expiry = observation.resetCredits?.nextExpiry {
                 marks.insert(expiry)
-                marks.insert(expiry.addingTimeInterval(-6 * 86_400))  // switches to a weekday
+                marks.insert(expiry.addingTimeInterval(-QuotaPresentation.weekdayWindow))  // switches to a weekday
             }
         }
         let later = marks.filter { $0 > entry.date }.sorted().prefix(maxEntries - 1)
@@ -107,38 +107,7 @@ struct QuotaTimelineLoader {
     // Returns the work's result, or nil once the deadline passes even if the
     // work ignores cancellation.
     private static func withDeadline<T>(_ deadline: Duration, _ work: @escaping () async -> T) async -> T? {
-        await withCheckedContinuation { (continuation: CheckedContinuation<T?, Never>) in
-            let gate = FirstFinisher(continuation)
-            let task = Task { await work() }
-            let timer = Task {
-                try? await Task.sleep(for: deadline)
-                if gate.finish(nil) { task.cancel() }
-            }
-            Task {
-                let value = await task.value
-                if gate.finish(value) { timer.cancel() }
-            }
-        }
-    }
-}
-
-// Lets the work and the timer race; whichever finishes first wins.
-private final class FirstFinisher<T>: @unchecked Sendable {
-    private let lock = NSLock()
-    private var continuation: CheckedContinuation<T?, Never>?
-
-    init(_ continuation: CheckedContinuation<T?, Never>) {
-        self.continuation = continuation
-    }
-
-    @discardableResult
-    func finish(_ value: T?) -> Bool {
-        lock.lock()
-        let pending = continuation
-        continuation = nil
-        lock.unlock()
-        pending?.resume(returning: value)
-        return pending != nil
+        await Deadline.race(after: deadline, fallback: nil) { await work() }
     }
 }
 

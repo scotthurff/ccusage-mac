@@ -286,6 +286,7 @@ final class QuotaPublisher {
     }
 
     private func remember(_ baseline: Baseline) {
+        guard state.baseline != baseline else { return }
         state.baseline = baseline
         persist()
     }

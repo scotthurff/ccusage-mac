@@ -1,5 +1,4 @@
 import CloudKit
-import CryptoKit
 import Foundation
 import os
 
@@ -247,18 +246,11 @@ private extension PhoneCacheState {
 // the Mac writes to. Only a hash of the user record name leaves this type.
 enum CloudAccountIdentity {
     static func current(timeout: Duration = .seconds(10)) async -> CloudAccountStatus {
-        await withCheckedContinuation { continuation in
-            let gate = AccountResumeOnce(continuation)
-            let work = Task { gate.resume(with: await check()) }
-            Task {
-                try? await Task.sleep(for: timeout)
-                if gate.resume(with: .temporarilyUnavailable) { work.cancel() }
-            }
-        }
+        await Deadline.race(after: timeout, fallback: .temporarilyUnavailable) { await check() }
     }
 
     static func hash(recordName: String) -> String {
-        SHA256.hash(data: Data(recordName.utf8)).map { String(format: "%02x", $0) }.joined()
+        AccountHash.sha256Hex(recordName)
     }
 
     private static func check() async -> CloudAccountStatus {
@@ -280,25 +272,5 @@ enum CloudAccountIdentity {
         } catch {
             return .temporarilyUnavailable
         }
-    }
-}
-
-// Lets the account check and the timer race; whichever finishes first wins.
-private final class AccountResumeOnce: @unchecked Sendable {
-    private let lock = NSLock()
-    private var continuation: CheckedContinuation<CloudAccountStatus, Never>?
-
-    init(_ continuation: CheckedContinuation<CloudAccountStatus, Never>) {
-        self.continuation = continuation
-    }
-
-    @discardableResult
-    func resume(with status: CloudAccountStatus) -> Bool {
-        lock.lock()
-        let pending = continuation
-        continuation = nil
-        lock.unlock()
-        pending?.resume(returning: status)
-        return pending != nil
     }
 }

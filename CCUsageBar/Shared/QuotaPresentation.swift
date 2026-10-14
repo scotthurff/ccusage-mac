@@ -9,10 +9,24 @@ struct QuotaPresentation {
 
     let now: Date
 
+    // Dates closer than this read as a weekday; farther ones as a date.
+    static let weekdayWindow: TimeInterval = 6 * 86_400
+
     func providers(in snapshot: QuotaSnapshot) -> [ProviderPresentation] {
         snapshot.providers
             .sorted { Self.providerRank($0.provider) < Self.providerRank($1.provider) }
             .map(provider)
+    }
+
+    // Like providers(in:), plus Claude and Codex as unknown when the snapshot
+    // lacks them, so both always appear on the phone and widget.
+    func providersIncludingDefaults(in snapshot: QuotaSnapshot) -> [ProviderPresentation] {
+        var snapshot = snapshot
+        for provider in [QuotaProvider.claude, .codex] where !snapshot.providers.contains(where: { $0.provider == provider }) {
+            snapshot.providers.append(ProviderSlot(provider: provider, generation: "", acceptedAttempt: 0,
+                                                   observation: nil, lastAttempt: nil))
+        }
+        return providers(in: snapshot)
     }
 
     func provider(_ slot: ProviderSlot) -> ProviderPresentation {
@@ -105,4 +119,22 @@ struct WindowPresentation: Equatable {
     let state: WindowState
 
     var isConfirmedZero: Bool { state == .current && window.usedPercent == 0 }
+}
+
+extension QuotaWindow {
+    // "5-hour", "Weekly", or the length in plain units.
+    static func lengthName(minutes: Int) -> String {
+        if abs(minutes - 300) <= 1 { return "5-hour" }
+        if abs(minutes - 10_080) <= 1 { return "Weekly" }
+        if minutes % 1_440 == 0 { return "\(minutes / 1_440)-day" }
+        if minutes % 60 == 0 { return "\(minutes / 60)-hour" }
+        return "\(minutes)-minute"
+    }
+}
+
+extension ResetCreditsInfo {
+    // e.g. "62,493 credits"
+    static func balanceText(_ balance: Double, locale: Locale = .autoupdatingCurrent) -> String {
+        "\(balance.formatted(.number.precision(.fractionLength(0)).locale(locale))) credits"
+    }
 }

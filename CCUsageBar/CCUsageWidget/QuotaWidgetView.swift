@@ -104,12 +104,7 @@ enum QuotaWidgetModel {
 
     // Claude and Codex always appear; one without a reading shows as unknown.
     static func sections(for snapshot: QuotaSnapshot, now: Date) -> [WidgetSection] {
-        var snapshot = snapshot
-        for provider in [QuotaProvider.claude, .codex] where !snapshot.providers.contains(where: { $0.provider == provider }) {
-            snapshot.providers.append(ProviderSlot(provider: provider, generation: "", acceptedAttempt: 0,
-                                                   observation: nil, lastAttempt: nil))
-        }
-        return QuotaPresentation(now: now).providers(in: snapshot).map(section)
+        QuotaPresentation(now: now).providersIncludingDefaults(in: snapshot).map(section)
     }
 
     private static func section(_ provider: ProviderPresentation) -> WidgetSection {
@@ -120,18 +115,10 @@ enum QuotaWidgetModel {
                              longWindow: (window.durationMinutes ?? 0) >= 1_440, isModelCap: window.scope == .model,
                              state: presented.state, tint: tint(provider.provider, scope: window.scope))
         }
-        return WidgetSection(provider: provider.provider, name: name(provider.provider),
+        return WidgetSection(provider: provider.provider, name: provider.provider.displayName,
                              tint: tint(provider.provider, scope: .provider), freshness: provider.freshness,
                              observedAt: provider.observedAt, rows: rows, resetCredits: provider.resetCredits,
                              creditBalance: provider.creditBalance)
-    }
-
-    static func name(_ provider: QuotaProvider) -> String {
-        switch provider {
-        case .claude: "Claude"
-        case .codex: "Codex"
-        default: provider.rawValue.capitalized
-        }
     }
 
     // Model caps inside Claude's allowance use the darker Fable color.
@@ -146,7 +133,7 @@ enum QuotaWidgetModel {
     // A model cap's name gains its length when the name lacks it: "Fable weekly".
     static func fullLabel(_ window: QuotaWindow) -> String {
         guard window.scope == .model, let minutes = window.durationMinutes else { return window.label }
-        let length = lengthName(minutes).lowercased()
+        let length = QuotaWindow.lengthName(minutes: minutes).lowercased()
         return window.label.lowercased().hasSuffix(length) ? window.label : "\(window.label) \(length)"
     }
 
@@ -154,17 +141,9 @@ enum QuotaWidgetModel {
     static func shortLabel(_ window: QuotaWindow) -> String {
         guard let minutes = window.durationMinutes else { return window.label }
         guard window.scope == .model else { return shortLength(minutes) }
-        let suffix = " " + lengthName(minutes).lowercased()
+        let suffix = " " + QuotaWindow.lengthName(minutes: minutes).lowercased()
         guard window.label.lowercased().hasSuffix(suffix) else { return window.label }
         return "\(window.label.dropLast(suffix.count)) \(shortLength(minutes))"
-    }
-
-    private static func lengthName(_ minutes: Int) -> String {
-        if abs(minutes - 300) <= 1 { return "5-hour" }
-        if abs(minutes - 10_080) <= 1 { return "Weekly" }
-        if minutes % 1_440 == 0 { return "\(minutes / 1_440)-day" }
-        if minutes % 60 == 0 { return "\(minutes / 60)-hour" }
-        return "\(minutes)-minute"
     }
 
     private static func shortLength(_ minutes: Int) -> String {
@@ -200,14 +179,14 @@ enum QuotaWidgetModel {
         let count = credits.available == 1 ? "1 full reset" : "\(credits.available) full resets"
         guard density != .mini, credits.available > 0, let expiry = credits.nextExpiry, expiry > now else { return count }
         let style = Date.FormatStyle(locale: locale, timeZone: timeZone)
-        let date = expiry.timeIntervalSince(now) < 6 * 86_400
+        let date = expiry.timeIntervalSince(now) < QuotaPresentation.weekdayWindow
             ? expiry.formatted(style.weekday(.abbreviated))
             : expiry.formatted(style.month(.abbreviated).day())
         return "\(count) · next expires \(date)"
     }
 
     static func creditBalanceText(_ balance: Double, locale: Locale = .autoupdatingCurrent) -> String {
-        "\(balance.formatted(.number.precision(.fractionLength(0)).locale(locale))) credits"
+        ResetCreditsInfo.balanceText(balance, locale: locale)
     }
 
     // e.g. "Claude weekly, 17 percent used, resets Saturday 2:59 PM"

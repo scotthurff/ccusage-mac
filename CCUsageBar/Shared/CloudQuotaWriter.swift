@@ -1,5 +1,4 @@
 import CloudKit
-import CryptoKit
 import Foundation
 
 // The write half of the CloudQuotaRecord contract. Only the Mac compiles
@@ -75,12 +74,12 @@ struct CloudKitQuotaDatabase: CloudQuotaDatabase {
 
     func account() async -> CloudAccountCheck {
         let container = self.container
-        return await Deadline.race(seconds: 15, fallback: .unavailable) {
+        return await Deadline.race(after: .seconds(15), fallback: .unavailable) {
             do {
                 switch try await container.accountStatus() {
                 case .available:
                     let recordID = try await container.userRecordID()
-                    return .available(accountHash: Self.hash(recordID.recordName))
+                    return .available(accountHash: AccountHash.sha256Hex(recordID.recordName))
                 case .noAccount:
                     return .noAccount
                 case .restricted, .couldNotDetermine, .temporarilyUnavailable:
@@ -118,44 +117,6 @@ struct CloudKitQuotaDatabase: CloudQuotaDatabase {
                 // Report the record's own error, such as a conflict.
                 throw error.partialErrorsByItemID?[record.recordID] ?? error
             }
-        }
-    }
-
-    private static func hash(_ recordName: String) -> String {
-        SHA256.hash(data: Data(recordName.utf8)).map { String(format: "%02x", $0) }.joined()
-    }
-}
-
-// Returns the work's result, or the fallback once the time runs out, even if
-// the work ignores cancellation.
-private enum Deadline {
-    static func race<T>(seconds: Double, fallback: T, _ work: @escaping () async -> T) async -> T {
-        await withCheckedContinuation { continuation in
-            let gate = FirstResult(continuation)
-            let task = Task { gate.resume(with: await work()) }
-            Task {
-                try? await Task.sleep(for: .seconds(seconds))
-                if gate.resume(with: fallback) { task.cancel() }
-            }
-        }
-    }
-
-    private final class FirstResult<T>: @unchecked Sendable {
-        private let lock = NSLock()
-        private var continuation: CheckedContinuation<T, Never>?
-
-        init(_ continuation: CheckedContinuation<T, Never>) {
-            self.continuation = continuation
-        }
-
-        @discardableResult
-        func resume(with value: T) -> Bool {
-            lock.lock()
-            let pending = continuation
-            continuation = nil
-            lock.unlock()
-            pending?.resume(returning: value)
-            return pending != nil
         }
     }
 }

@@ -64,12 +64,8 @@ final class PhoneState: ObservableObject {
     // Every provider in the snapshot, plus Claude and Codex as unknown if the
     // snapshot lacks them. Empty when there's no snapshot at all.
     func providers(at now: Date) -> [ProviderPresentation] {
-        guard var snapshot = stored?.snapshot else { return [] }
-        for provider in [QuotaProvider.claude, .codex] where !snapshot.providers.contains(where: { $0.provider == provider }) {
-            snapshot.providers.append(ProviderSlot(provider: provider, generation: "", acceptedAttempt: 0,
-                                                   observation: nil, lastAttempt: nil))
-        }
-        return QuotaPresentation(now: now).providers(in: snapshot)
+        guard let snapshot = stored?.snapshot else { return [] }
+        return QuotaPresentation(now: now).providersIncludingDefaults(in: snapshot)
     }
 
     // Callers that arrive while a refresh runs wait for that one.
@@ -226,18 +222,10 @@ final class PhoneState: ObservableObject {
 // parameters so tests can pin a time zone; the app passes the phone's own,
 // which follow time zone changes.
 enum PhoneText {
-    static func providerName(_ provider: QuotaProvider) -> String {
-        switch provider {
-        case .claude: "Claude"
-        case .codex: "Codex"
-        default: provider.rawValue.capitalized
-        }
-    }
-
     static func readingAge(_ provider: ProviderPresentation, now: Date,
                            calendar: Calendar = .autoupdatingCurrent, locale: Locale = .autoupdatingCurrent) -> String {
         guard let observedAt = provider.observedAt, let age = provider.age else {
-            return "Your Mac hasn't read \(providerName(provider.provider)) limits yet"
+            return "Your Mac hasn't read \(provider.provider.displayName) limits yet"
         }
         if provider.freshness == .unverified {
             return "Read on your Mac at \(localTime(observedAt, now: now, calendar: calendar, locale: locale)), ahead of this iPhone's clock"
@@ -270,7 +258,7 @@ enum PhoneText {
         if calendar.isDate(date, inSameDayAs: now) {
             return "today " + date.formatted(style.hour().minute())
         }
-        if abs(date.timeIntervalSince(now)) < 6 * 86_400 {
+        if abs(date.timeIntervalSince(now)) < QuotaPresentation.weekdayWindow {
             return date.formatted(style.weekday(.wide).hour().minute())
         }
         return date.formatted(style.month(.abbreviated).day().hour().minute())
@@ -291,7 +279,7 @@ enum PhoneText {
         let name = window.window.scope == .model
             ? "\(window.window.label) model limit"
             : window.window.label.lowercased()
-        var parts = ["\(providerName(provider.provider)) \(name)",
+        var parts = ["\(provider.provider.displayName) \(name)",
                      "\(Int(window.window.usedPercent.rounded())) percent used"]
         if let resetsAt = window.window.resetsAt {
             let time = localTime(resetsAt, now: now, calendar: calendar, locale: locale)
@@ -316,7 +304,7 @@ enum PhoneText {
     }
 
     static func creditBalance(_ balance: Double, locale: Locale = .autoupdatingCurrent) -> String {
-        "\(balance.formatted(.number.precision(.fractionLength(0)).locale(locale))) credits"
+        ResetCreditsInfo.balanceText(balance, locale: locale)
     }
 
     static func checked(_ checkedAt: Date, now: Date) -> String {
