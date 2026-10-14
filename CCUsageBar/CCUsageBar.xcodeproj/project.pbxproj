@@ -20,11 +20,9 @@
 		A10012 /* CloudKitSmoke.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40001; };
 		A20001 /* CCUsagePhoneApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20001; };
 		A20002 /* CloudKitSmoke.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40001; };
-		A20004 /* UsageWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = B30005; };
 		A20003 /* CCUsageWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B30004; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A30001 /* CCUsageWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = B30001; };
 		A30002 /* CloudKitSmoke.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40001; };
-		A30003 /* UsageWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = B30005; };
 		A50001 /* QuotaSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50001; };
 		A50002 /* QuotaPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50002; };
 		A50003 /* CloudQuotaStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50003; };
@@ -129,7 +127,6 @@
 		B30001 /* CCUsageWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CCUsageWidget.swift; sourceTree = "<group>"; };
 		B30002 /* CCUsageWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CCUsageWidget.entitlements; sourceTree = "<group>"; };
 		B30003 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		B30005 /* UsageWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageWidget.swift; sourceTree = "<group>"; };
 		B30004 /* CCUsageWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CCUsageWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		B40001 /* CloudKitSmoke.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitSmoke.swift; sourceTree = "<group>"; };
 		B50001 /* QuotaSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuotaSnapshotTests.swift; sourceTree = "<group>"; };
@@ -279,7 +276,6 @@
 			isa = PBXGroup;
 			children = (
 				B30001 /* CCUsageWidget.swift */,
-				B30005 /* UsageWidget.swift */,
 				B30003 /* Info.plist */,
 				B30002 /* CCUsageWidget.entitlements */,
 				B30006 /* QuotaTimelineProvider.swift */,
@@ -523,7 +519,6 @@
 			files = (
 				A20001 /* CCUsagePhoneApp.swift in Sources */,
 				A20002 /* CloudKitSmoke.swift in Sources */,
-				A20004 /* UsageWidget.swift in Sources */,
 				A20005 /* QuotaSnapshot.swift in Sources */,
 				A20006 /* QuotaPresentation.swift in Sources */,
 				A20007 /* CloudQuotaStore.swift in Sources */,
@@ -541,7 +536,6 @@
 			files = (
 				A30001 /* CCUsageWidget.swift in Sources */,
 				A30002 /* CloudKitSmoke.swift in Sources */,
-				A30003 /* UsageWidget.swift in Sources */,
 				A30004 /* QuotaSnapshot.swift in Sources */,
 				A30005 /* QuotaPresentation.swift in Sources */,
 				A30006 /* CloudQuotaStore.swift in Sources */,
