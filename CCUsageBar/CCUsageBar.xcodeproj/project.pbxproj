@@ -41,6 +41,31 @@
 		A50004 /* QuotaSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40002; };
 		A50005 /* QuotaPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40003; };
 		A50006 /* CloudQuotaStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40004; };
+		A10016 /* CodexLimitsClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10015; };
+		A20008 /* PhoneState.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20004; };
+		A20009 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20005; };
+		A20010 /* PhoneSnapshotCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40005; };
+		A30007 /* PhoneSnapshotCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40005; };
+		A60001 /* CodexLimitsClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60001; };
+		A60002 /* ClaudeLimitsFetcherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60002; };
+		A60003 /* AppStateQuotaTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60003; };
+		A60004 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10002; };
+		A60005 /* UsageData.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10003; };
+		A60006 /* CCUsageRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10004; };
+		A60007 /* LimitsData.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10009; };
+		A60008 /* CodexLimitsReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10010; };
+		A60009 /* ClaudeLimitsFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10011; };
+		A60010 /* CodexLimitsClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10015; };
+		A60011 /* QuotaSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40002; };
+		A60012 /* QuotaPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40003; };
+		A60013 /* CloudQuotaStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40004; };
+		A70001 /* PhoneSnapshotCacheTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B70001; };
+		A70002 /* PhoneStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B70002; };
+		A70003 /* PhoneState.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20004; };
+		A70004 /* QuotaSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40002; };
+		A70005 /* QuotaPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40003; };
+		A70006 /* CloudQuotaStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40004; };
+		A70007 /* PhoneSnapshotCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40005; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -98,6 +123,17 @@
 		B40002 /* QuotaSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuotaSnapshot.swift; sourceTree = "<group>"; };
 		B40003 /* QuotaPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuotaPresentation.swift; sourceTree = "<group>"; };
 		B40004 /* CloudQuotaStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudQuotaStore.swift; sourceTree = "<group>"; };
+		B10015 /* CodexLimitsClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexLimitsClient.swift; sourceTree = "<group>"; };
+		B20004 /* PhoneState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneState.swift; sourceTree = "<group>"; };
+		B20005 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		B40005 /* PhoneSnapshotCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSnapshotCache.swift; sourceTree = "<group>"; };
+		B60001 /* CodexLimitsClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexLimitsClientTests.swift; sourceTree = "<group>"; };
+		B60002 /* ClaudeLimitsFetcherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeLimitsFetcherTests.swift; sourceTree = "<group>"; };
+		B60003 /* AppStateQuotaTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStateQuotaTests.swift; sourceTree = "<group>"; };
+		B70001 /* PhoneSnapshotCacheTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSnapshotCacheTests.swift; sourceTree = "<group>"; };
+		B70002 /* PhoneStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneStateTests.swift; sourceTree = "<group>"; };
+		B60004 /* CCUsageBarTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CCUsageBarTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B70004 /* CCUsagePhoneTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CCUsagePhoneTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -129,6 +165,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C60001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C70001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -140,6 +190,8 @@
 				D30001 /* CCUsageWidget */,
 				D40001 /* Shared */,
 				D50001 /* CCUsageSharedTests */,
+				D60001 /* CCUsageBarTests */,
+				D70001 /* CCUsagePhoneTests */,
 				D10003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -160,6 +212,7 @@
 				B10014 /* MacSmokeCheck.swift */,
 				B10007 /* Info.plist */,
 				B10013 /* CCUsageBar.entitlements */,
+				B10015 /* CodexLimitsClient.swift */,
 			);
 			path = CCUsageBar;
 			sourceTree = "<group>";
@@ -171,6 +224,8 @@
 				B20003 /* CCUsagePhone.app */,
 				B30004 /* CCUsageWidget.appex */,
 				B50004 /* CCUsageSharedTests.xctest */,
+				B60004 /* CCUsageBarTests.xctest */,
+				B70004 /* CCUsagePhoneTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -180,6 +235,8 @@
 			children = (
 				B20001 /* CCUsagePhoneApp.swift */,
 				B20002 /* CCUsagePhone.entitlements */,
+				B20004 /* PhoneState.swift */,
+				B20005 /* ContentView.swift */,
 			);
 			path = CCUsagePhone;
 			sourceTree = "<group>";
@@ -202,6 +259,7 @@
 				B40002 /* QuotaSnapshot.swift */,
 				B40003 /* QuotaPresentation.swift */,
 				B40004 /* CloudQuotaStore.swift */,
+				B40005 /* PhoneSnapshotCache.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -214,6 +272,25 @@
 				B50003 /* CloudQuotaStoreTests.swift */,
 			);
 			path = CCUsageSharedTests;
+			sourceTree = "<group>";
+		};
+		D60001 /* CCUsageBarTests */ = {
+			isa = PBXGroup;
+			children = (
+				B60001 /* CodexLimitsClientTests.swift */,
+				B60002 /* ClaudeLimitsFetcherTests.swift */,
+				B60003 /* AppStateQuotaTests.swift */,
+			);
+			path = CCUsageBarTests;
+			sourceTree = "<group>";
+		};
+		D70001 /* CCUsagePhoneTests */ = {
+			isa = PBXGroup;
+			children = (
+				B70001 /* PhoneSnapshotCacheTests.swift */,
+				B70002 /* PhoneStateTests.swift */,
+			);
+			path = CCUsagePhoneTests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -285,6 +362,38 @@
 			productReference = B50004 /* CCUsageSharedTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		E60001 /* CCUsageBarTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F60001;
+			buildPhases = (
+				G60001 /* Sources */,
+				C60001 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CCUsageBarTests;
+			productName = CCUsageBarTests;
+			productReference = B60004 /* CCUsageBarTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		E70001 /* CCUsagePhoneTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F70001;
+			buildPhases = (
+				G70001 /* Sources */,
+				C70001 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CCUsagePhoneTests;
+			productName = CCUsagePhoneTests;
+			productReference = B70004 /* CCUsagePhoneTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -312,6 +421,8 @@
 				E20001 /* CCUsagePhone */,
 				E30001 /* CCUsageWidget */,
 				E50001 /* CCUsageSharedTests */,
+				E60001 /* CCUsageBarTests */,
+				E70001 /* CCUsagePhoneTests */,
 			);
 		};
 /* End PBXProject section */
@@ -336,6 +447,7 @@
 				A10013 /* QuotaSnapshot.swift in Sources */,
 				A10014 /* QuotaPresentation.swift in Sources */,
 				A10015 /* CloudQuotaStore.swift in Sources */,
+				A10016 /* CodexLimitsClient.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -349,6 +461,9 @@
 				A20005 /* QuotaSnapshot.swift in Sources */,
 				A20006 /* QuotaPresentation.swift in Sources */,
 				A20007 /* CloudQuotaStore.swift in Sources */,
+				A20008 /* PhoneState.swift in Sources */,
+				A20009 /* ContentView.swift in Sources */,
+				A20010 /* PhoneSnapshotCache.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -362,6 +477,7 @@
 				A30004 /* QuotaSnapshot.swift in Sources */,
 				A30005 /* QuotaPresentation.swift in Sources */,
 				A30006 /* CloudQuotaStore.swift in Sources */,
+				A30007 /* PhoneSnapshotCache.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -375,6 +491,40 @@
 				A50004 /* QuotaSnapshot.swift in Sources */,
 				A50005 /* QuotaPresentation.swift in Sources */,
 				A50006 /* CloudQuotaStore.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		G60001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A60001 /* CodexLimitsClientTests.swift in Sources */,
+				A60002 /* ClaudeLimitsFetcherTests.swift in Sources */,
+				A60003 /* AppStateQuotaTests.swift in Sources */,
+				A60004 /* AppState.swift in Sources */,
+				A60005 /* UsageData.swift in Sources */,
+				A60006 /* CCUsageRunner.swift in Sources */,
+				A60007 /* LimitsData.swift in Sources */,
+				A60008 /* CodexLimitsReader.swift in Sources */,
+				A60009 /* ClaudeLimitsFetcher.swift in Sources */,
+				A60010 /* CodexLimitsClient.swift in Sources */,
+				A60011 /* QuotaSnapshot.swift in Sources */,
+				A60012 /* QuotaPresentation.swift in Sources */,
+				A60013 /* CloudQuotaStore.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		G70001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A70001 /* PhoneSnapshotCacheTests.swift in Sources */,
+				A70002 /* PhoneStateTests.swift in Sources */,
+				A70003 /* PhoneState.swift in Sources */,
+				A70004 /* QuotaSnapshot.swift in Sources */,
+				A70005 /* QuotaPresentation.swift in Sources */,
+				A70006 /* CloudQuotaStore.swift in Sources */,
+				A70007 /* PhoneSnapshotCache.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -630,6 +780,78 @@
 			};
 			name = Release;
 		};
+		F60002 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ccusagebar.mactests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		F60003 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ccusagebar.mactests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		F70002 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ccusagebar.phonetests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		F70003 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ccusagebar.phonetests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -674,6 +896,24 @@
 			buildConfigurations = (
 				F50002 /* Debug */,
 				F50003 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F60001 /* Build configuration list for PBXNativeTarget "CCUsageBarTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F60002 /* Debug */,
+				F60003 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F70001 /* Build configuration list for PBXNativeTarget "CCUsagePhoneTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F70002 /* Debug */,
+				F70003 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
