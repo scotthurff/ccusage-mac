@@ -105,6 +105,7 @@ The temporary smoke-test code (a synthetic record, a Mac `--smoke-check` mode, a
 - Scott opened the updated phone app and it showed the Mac's readings. He added the "Claude & Codex limits" widget, which showed them too.
 - Scott confirmed the remaining device checks on 2026-10-14: a pull-to-refresh kept the Mac's reading age, an offline (Airplane Mode) launch showed the saved readings with their age, and the widget kept updating with the app closed as the Mac published.
 - After the code review fixes, the reinstalled menu bar app published through revision 10 with nothing pending.
+- The phone app with the code review fixes was installed over the earlier build, keeping its cached readings. On first launch it replaced them with the Mac's latest snapshot (revision 27) and showed the reading as taken "just now".
 
 ### Codex account limits
 
