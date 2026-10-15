@@ -103,7 +103,8 @@ The temporary smoke-test code (a synthetic record, a Mac `--smoke-check` mode, a
 - The signed menu bar app replaced the ad-hoc copy in `/Applications`. The old copy is kept as `/Applications/CCUsageBar-old.app`. The login item still points to `/Applications/CCUsageBar.app`.
 - On first launch the new app collected both providers and published revision 5 to the private record, with nothing left pending.
 - Scott opened the updated phone app and it showed the Mac's readings. He added the "Claude & Codex limits" widget, which showed them too.
-- Still to observe: the widget refreshing in the background with the app closed, a pull-to-refresh keeping the Mac's reading age, and an offline launch with cached data.
+- Scott confirmed the remaining device checks on 2026-10-14: a pull-to-refresh kept the Mac's reading age, an offline (Airplane Mode) launch showed the saved readings with their age, and the widget kept updating with the app closed as the Mac published.
+- After the code review fixes, the reinstalled menu bar app published through revision 10 with nothing pending.
 
 ### Codex account limits
 
