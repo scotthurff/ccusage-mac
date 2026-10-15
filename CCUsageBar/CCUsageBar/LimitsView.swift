@@ -17,77 +17,115 @@ struct LimitsView: View {
                     Spacer()
                 }
             } else {
-                providerRow("CLAUDE", limits: appState.claudeLimits, color: Provider.claude.color)
-                ForEach(appState.claudeLimits?.scopedWeekly ?? [], id: \.name) { scoped in
-                    scopedRow(scoped)
-                }
-                providerRow("CODEX", limits: appState.codexLimits, color: Provider.codex.color)
+                providerRows(.claude, title: "CLAUDE", color: Provider.claude.color, modelColor: Provider.fableColor)
+                providerRows(.codex, title: "CODEX", color: Provider.codex.color, modelColor: Provider.codex.color)
             }
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
     }
 
-    private func providerRow(_ name: String, limits: ProviderLimits?, color: Color) -> some View {
-        HStack(spacing: 8) {
-            Text(name)
-                .font(.caption2.weight(.medium))
-                .foregroundStyle(.secondary)
-                .frame(width: 50, alignment: .leading)
-            gauge(label: "5h", window: limits?.fiveHour, color: color, weekly: false)
-            gauge(label: "wk", window: limits?.weekly, color: color, weekly: true)
-        }
-    }
-
-    // Per-model weekly cap (e.g. FABLE): weekly gauge only, aligned with the
-    // wk column; no 5h slot because no such window exists for scoped limits.
-    private func scopedRow(_ limit: ScopedLimit) -> some View {
-        HStack(spacing: 8) {
-            Text(limit.name.uppercased())
-                .font(.caption2.weight(.medium))
-                .foregroundStyle(.secondary)
-                .frame(width: 50, alignment: .leading)
-            Color.clear
-                .frame(maxWidth: .infinity, maxHeight: 1)
-            gauge(label: "wk", window: limit.window, color: Provider.fableColor, weekly: true)
-        }
-    }
-
-    private func gauge(label: String, window: LimitWindow?, color: Color, weekly: Bool) -> some View {
-        HStack(spacing: 4) {
-            Text(label)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-            track(window: window, color: color)
-            if let window {
-                Text("\(Int(window.effectivePercent.rounded()))%")
-                    .font(.caption2)
-                if let reset = window.effectiveResetsAt {
-                    Text("·\(Self.formatReset(reset, weekly: weekly))")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                        .fixedSize()
+    // The provider row carries its 5-hour and weekly gauges and the reading's
+    // age; model caps and any other windows follow on their own rows.
+    @ViewBuilder
+    private func providerRows(_ provider: QuotaProvider, title: String, color: Color, modelColor: Color) -> some View {
+        let presentation = appState.presentation(provider)
+        let rows = MacQuotaDisplay.rows(presentation, title: title)
+        ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
+            HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(row.title)
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                    if index == 0, let age = MacQuotaDisplay.ageText(presentation) {
+                        Text(age)
+                            .font(.caption2)
+                            .foregroundStyle(MacQuotaDisplay.isOutdated(presentation)
+                                             ? AnyShapeStyle(Color.orange) : AnyShapeStyle(.tertiary))
+                            .help(Self.ageHelp(presentation))
+                    }
                 }
-            } else {
+                .frame(width: 56, alignment: .leading)
+                let rowColor = row.isModel ? modelColor : color
+                slot(row.short, placeholder: index == 0 ? "5h" : nil, color: rowColor)
+                slot(row.long, placeholder: index == 0 ? "wk" : nil, color: rowColor)
+            }
+        }
+    }
+
+    // A gauge, an empty "--" gauge on the provider row, or blank space that
+    // keeps the columns aligned.
+    @ViewBuilder
+    private func slot(_ window: WindowPresentation?, placeholder: String?, color: Color) -> some View {
+        if let window {
+            gauge(MacQuotaDisplay.gauge(window), minutes: window.window.durationMinutes, color: color)
+        } else if let placeholder {
+            HStack(spacing: 4) {
+                Text(placeholder)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                track(fill: 0, color: color)
                 Text("--")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .help("No reading yet")
+        } else {
+            Color.clear
+                .frame(maxWidth: .infinity, maxHeight: 1)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func track(window: LimitWindow?, color: Color) -> some View {
-        let percent = window?.effectivePercent ?? 0
-        let fillColor = percent >= 80 ? Color.red : color
-        return ZStack(alignment: .leading) {
+    private func gauge(_ gauge: MacGauge, minutes: Int?, color: Color) -> some View {
+        HStack(spacing: 4) {
+            Text(gauge.label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            track(fill: gauge.fill, color: Self.fillColor(gauge.tone, base: color))
+            // An outdated number reads as dated history; a passed reset is struck through.
+            Text(gauge.percentText)
+                .font(.caption2)
+                .strikethrough(gauge.isStruckThrough)
+                .foregroundStyle(gauge.tone == .neutral ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
+            if let reset = gauge.resetsAt {
+                Text("·\(Self.formatReset(reset, weekly: (minutes ?? 0) >= 1_440))")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .fixedSize()
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .help(gauge.help)
+    }
+
+    private func track(fill: Double, color: Color) -> some View {
+        ZStack(alignment: .leading) {
             Capsule()
                 .fill(Color.primary.opacity(0.12))
             Capsule()
-                .fill(fillColor)
-                .frame(width: 34 * min(percent, 100) / 100)
+                .fill(color)
+                .frame(width: 34 * fill / 100)
         }
         .frame(width: 34, height: 5)
+    }
+
+    private static func fillColor(_ tone: MacGauge.Tone, base: Color) -> Color {
+        switch tone {
+        case .normal: return base
+        case .warning: return .red
+        case .neutral: return Color.gray.opacity(0.6)
+        }
+    }
+
+    private static func ageHelp(_ presentation: ProviderPresentation) -> String {
+        switch presentation.freshness {
+        case .outdated(.failedAttempt): return "The last check failed. These numbers are from the earlier reading."
+        case .outdated(.aged): return "This reading is more than an hour old."
+        case .unverified: return "This reading's time is in the future, so its numbers can't be trusted."
+        case .current, .unknown: return "Time since this reading"
+        }
     }
 
     // 5h → clock time ("2:14p"), weekly → weekday ("Mon")

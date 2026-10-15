@@ -10,14 +10,54 @@ class AppState: ObservableObject {
     @Published var isLoading = false
     @Published var lastRefresh: Date?
     @Published var errorMessage: String?
-    @Published var claudeLimits: ProviderLimits?
-    @Published var codexLimits: ProviderLimits?
     @Published var hasAttemptedLimitsFetch = false
+    // Each provider's latest accepted state: what the phone will be sent.
+    @Published private(set) var quotaSlots: [QuotaProvider: ProviderSlot] = [:]
+
+    static let quotaProviders: [QuotaProvider] = [.claude, .codex]
+    private static let quotaStateKey = "quotaState"
 
     private let runner = CCUsageRunner()
-    private let codexReader = CodexLimitsReader()
-    private let claudeFetcher = ClaudeLimitsFetcher()
+    private let defaults: UserDefaults
+    private let collectors: [QuotaProvider: QuotaCollector]
+    private let publisher: QuotaPublisher?
+    private let now: () -> Date
+    // Local hashes of each provider's signed-in account. Never published.
+    private var accountKeys: [QuotaProvider: String] = [:]
+    private var inFlight: [QuotaProvider: Int] = [:]
+    private var lastFinished: [QuotaProvider: Int] = [:]
+    private var nextSequence = 0
     private var refreshTask: Task<Void, Never>?
+    private var clockTask: Task<Void, Never>?
+
+    // Issued when a collection starts. Its result is accepted only if the
+    // provider's account context is unchanged and no later collection has
+    // already been accepted.
+    struct CollectionTicket: Equatable {
+        let provider: QuotaProvider
+        let generation: String
+        let sequence: Int
+    }
+
+    init(defaults: UserDefaults = .standard,
+         claudeCollector: QuotaCollector = ClaudeLimitsFetcher(),
+         codexCollector: QuotaCollector = CodexLimitsClient(),
+         publisher: QuotaPublisher? = nil,
+         now: @escaping () -> Date = { Date() },
+         startsAutomatically: Bool = true) {
+        self.defaults = defaults
+        self.collectors = [.claude: claudeCollector, .codex: codexCollector]
+        // The running app publishes to iCloud. Tests and checks that don't
+        // start automatically publish only through a publisher they pass in.
+        self.publisher = publisher ?? (startsAutomatically ? QuotaPublisher.live(defaults: defaults) : nil)
+        self.now = now
+        loadCache()
+        loadQuotaState()
+        guard startsAutomatically else { return }
+        Task { await refresh() }
+        startRefreshLoop()
+        startClock()
+    }
 
     var todayCostLabel: String {
         let todayStr = Self.todayDateString()
@@ -67,12 +107,6 @@ class AppState: ObservableObject {
         return "Last updated \(formatter.string(from: lastRefresh))"
     }
 
-    init() {
-        loadCache()
-        Task { await refresh() }
-        startRefreshLoop()
-    }
-
     func refresh() async {
         guard !isLoading else { return }
         isLoading = true
@@ -80,21 +114,16 @@ class AppState: ObservableObject {
 
         // Fan out concurrently; each source fails independently.
         async let usage: Void = refreshUsage()
-        async let claude = claudeFetcher.fetchLimits()
-        async let codex = codexReader.fetchLimits()
-
-        // Failure policy: hold last-known values — only overwrite on success.
-        // `--` appears only before the first-ever success (no cache, no fetch).
-        if let claude = await claude {
-            claudeLimits = claude
-            saveLimitsCache(claude, key: "cachedClaudeLimits")
-        }
-        if let codex = await codex {
-            codexLimits = codex
-            saveLimitsCache(codex, key: "cachedCodexLimits")
-        }
-        hasAttemptedLimitsFetch = true
+        await refreshQuotas()
         await usage
+    }
+
+    func refreshQuotas() async {
+        async let claude: Void = collect(.claude)
+        async let codex: Void = collect(.codex)
+        _ = await (claude, codex)
+        hasAttemptedLimitsFetch = true
+        publishQuotas()
     }
 
     private func refreshUsage() async {
@@ -113,36 +142,116 @@ class AppState: ObservableObject {
         }
     }
 
-    // MARK: - Limits
+    // MARK: - Quotas
 
-    var hasLimitsData: Bool {
-        claudeLimits != nil || codexLimits != nil
+    private func collect(_ provider: QuotaProvider) async {
+        guard let collector = collectors[provider], let ticket = beginCollection(provider) else { return }
+        finishCollection(ticket, await collector.collect())
     }
 
-    // Hottest gauge across providers and scoped model caps, expiry-adjusted
-    // via the shared gate. Hint: CL/CX for providers, first two letters for
-    // scoped models (Fable → FA).
-    var hottestLimit: (hint: String, percent: Double)? {
-        var candidates: [(String, LimitWindow?)] = [
-            (Provider.claude.menuBarHint, claudeLimits?.fiveHour),
-            (Provider.claude.menuBarHint, claudeLimits?.weekly),
-            (Provider.codex.menuBarHint, codexLimits?.fiveHour),
-            (Provider.codex.menuBarHint, codexLimits?.weekly)
-        ]
-        for scoped in claudeLimits?.scopedWeekly ?? [] {
-            candidates.append((String(scoped.name.uppercased().prefix(2)), scoped.window))
+    // One collection per provider at a time.
+    func beginCollection(_ provider: QuotaProvider) -> CollectionTicket? {
+        guard inFlight[provider] == nil else { return nil }
+        nextSequence += 1
+        inFlight[provider] = nextSequence
+        return CollectionTicket(provider: provider, generation: slot(provider).generation, sequence: nextSequence)
+    }
+
+    // Success replaces the provider's whole window list with the new reading.
+    // Failure keeps the previous reading and its date, and records the failed
+    // attempt, which marks that reading outdated.
+    func finishCollection(_ ticket: CollectionTicket, _ result: QuotaCollectionResult) {
+        let provider = ticket.provider
+        if inFlight[provider] == ticket.sequence { inFlight[provider] = nil }
+        var slot = slot(provider)
+        guard ticket.generation == slot.generation, ticket.sequence > lastFinished[provider, default: 0] else {
+            Self.logger.info("Dropped a superseded \(provider.rawValue) result")
+            return
         }
-        return candidates
-            .compactMap { hint, window in window.map { (hint, $0.effectivePercent) } }
-            .max { $0.1 < $1.1 }
-            .map { (hint: $0.0, percent: $0.1) }
+        lastFinished[provider] = ticket.sequence
+
+        // A different account never inherits the previous account's readings.
+        // A missing identity signal, or a refreshed login token, is not a switch.
+        if let key = result.accountKey {
+            if let bound = accountKeys[provider], bound != key {
+                Self.logger.info("\(provider.rawValue) account changed; dropped the previous account's readings")
+                slot = Self.emptySlot(provider)
+            }
+            accountKeys[provider] = key
+        }
+
+        slot.acceptedAttempt += 1
+        if let observation = result.observation {
+            slot.observation = observation
+            slot.lastAttempt = CollectionAttempt(at: observation.observedAt, outcome: .success)
+        } else {
+            slot.lastAttempt = CollectionAttempt(at: now(), outcome: .failure)
+        }
+        quotaSlots[provider] = slot
+        saveQuotaState()
+    }
+
+    // Drops a provider's readings and starts a new account context. A read
+    // still in flight belongs to the old context and will be rejected.
+    func invalidate(_ provider: QuotaProvider) {
+        quotaSlots[provider] = Self.emptySlot(provider)
+        accountKeys[provider] = nil
+        inFlight[provider] = nil
+        saveQuotaState()
+        publishQuotas()
+    }
+
+    // Hands a copy of the current slots to the publisher without waiting for
+    // iCloud. Publishing never changes a slot or the menu bar.
+    private func publishQuotas() {
+        publisher?.submit(providerSlots)
+    }
+
+    func slot(_ provider: QuotaProvider) -> ProviderSlot {
+        quotaSlots[provider] ?? ProviderSlot(provider: provider, generation: "", acceptedAttempt: 0,
+                                             observation: nil, lastAttempt: nil)
+    }
+
+    var providerSlots: [ProviderSlot] {
+        Self.quotaProviders.compactMap { quotaSlots[$0] }
+    }
+
+    // The shared rules the phone uses: age, outdated, unknown, passed resets.
+    func presentation(_ provider: QuotaProvider) -> ProviderPresentation {
+        QuotaPresentation(now: now()).provider(slot(provider))
+    }
+
+    var hasLimitsData: Bool {
+        quotaSlots.values.contains { $0.observation != nil }
+    }
+
+    // Hottest current gauge across providers and model caps. Outdated or
+    // unconfirmed numbers stay out of the menu bar; the popover keeps them.
+    // Hint: CL/CX for providers, first two letters for model caps (Fable → FA).
+    var hottestLimit: (hint: String, percent: Double)? {
+        Self.quotaProviders
+            .flatMap { provider in
+                presentation(provider).windows
+                    .filter { $0.state == .current }
+                    .map { (hint: Self.menuBarHint(provider, $0.window), percent: $0.window.usedPercent) }
+            }
+            .max { $0.percent < $1.percent }
+    }
+
+    private static func menuBarHint(_ provider: QuotaProvider, _ window: QuotaWindow) -> String {
+        if window.scope == .model { return String(window.label.uppercased().prefix(2)) }
+        switch provider {
+        case .claude: return Provider.claude.menuBarHint
+        case .codex: return Provider.codex.menuBarHint
+        default: return String(provider.rawValue.uppercased().prefix(2))
+        }
     }
 
     var limitWarningActive: Bool {
-        (hottestLimit?.percent ?? 0) >= 80
+        (hottestLimit?.percent ?? 0) >= QuotaPresentation.warningPercent
     }
 
-    // Menu bar: "$80 · CL 62%" — cost-only when limits unavailable, limit-only
+    // Menu bar: "$80 · CL 62%" — cost-only when no current limit, limit-only
     // when cost missing, existing "--" when neither.
     var menuBarLabel: String {
         let limitPart = hottestLimit.map { hottest in
@@ -172,43 +281,91 @@ class AppState: ObservableObject {
         }
     }
 
+    // Ages and passed resets change with time alone; redraw once a minute.
+    private func startClock() {
+        clockTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(60))
+                self?.objectWillChange.send()
+            }
+        }
+    }
+
     // MARK: - Cache
 
     private func loadCache() {
-        if let data = UserDefaults.standard.data(forKey: "cachedUsageResponse") {
+        if let data = defaults.data(forKey: "cachedUsageResponse") {
             do {
                 let response = try JSONDecoder().decode(UsageResponse.self, from: data)
                 dailyData = response.daily
                 totals = response.totals
-                lastRefresh = UserDefaults.standard.object(forKey: "cacheTimestamp") as? Date
+                lastRefresh = defaults.object(forKey: "cacheTimestamp") as? Date
                 Self.logger.info("Loaded cache: \(response.daily.count) days")
             } catch {
                 Self.logger.error("Cache decode failed: \(error)")
             }
-        }
-        claudeLimits = loadLimitsCache(key: "cachedClaudeLimits")
-        codexLimits = loadLimitsCache(key: "cachedCodexLimits")
-    }
-
-    private func loadLimitsCache(key: String) -> ProviderLimits? {
-        guard let data = UserDefaults.standard.data(forKey: key) else { return nil }
-        return try? JSONDecoder().decode(ProviderLimits.self, from: data)
-    }
-
-    private func saveLimitsCache(_ limits: ProviderLimits, key: String) {
-        if let data = try? JSONEncoder().encode(limits) {
-            UserDefaults.standard.set(data, forKey: key)
         }
     }
 
     private func saveCache(_ response: UsageResponse) {
         do {
             let data = try JSONEncoder().encode(response)
-            UserDefaults.standard.set(data, forKey: "cachedUsageResponse")
-            UserDefaults.standard.set(Date(), forKey: "cacheTimestamp")
+            defaults.set(data, forKey: "cachedUsageResponse")
+            defaults.set(Date(), forKey: "cacheTimestamp")
         } catch {
             Self.logger.error("Cache save failed: \(error)")
         }
+    }
+
+    private struct StoredQuotaState: Codable {
+        var slots: [ProviderSlot]
+        // Keyed by provider; local account hashes only.
+        var accountKeys: [String: String]
+    }
+
+    // Loading never changes an observation date. On the first launch of this
+    // version, Claude's old cache moves over with its original date; Codex's
+    // old cache came from local logs, so Codex starts unknown instead.
+    private func loadQuotaState() {
+        if let data = defaults.data(forKey: Self.quotaStateKey) {
+            if let stored = try? JSONDecoder.quota.decode(StoredQuotaState.self, from: data) {
+                for slot in stored.slots where Self.quotaProviders.contains(slot.provider) {
+                    quotaSlots[slot.provider] = slot
+                }
+                for provider in Self.quotaProviders {
+                    if quotaSlots[provider] == nil { quotaSlots[provider] = Self.emptySlot(provider) }
+                    accountKeys[provider] = stored.accountKeys[provider.rawValue]
+                }
+                return
+            }
+            Self.logger.error("Stored quota state was unreadable; starting from the old caches")
+        }
+        var claude = Self.emptySlot(.claude)
+        if let data = defaults.data(forKey: "cachedClaudeLimits"),
+           let legacy = try? JSONDecoder().decode(ProviderLimits.self, from: data),
+           let observation = legacy.migratedClaudeObservation(now: now()) {
+            claude.observation = observation
+            claude.lastAttempt = CollectionAttempt(at: observation.observedAt, outcome: .success)
+        }
+        quotaSlots = [.claude: claude, .codex: Self.emptySlot(.codex)]
+        saveQuotaState()
+    }
+
+    private func saveQuotaState() {
+        let stored = StoredQuotaState(
+            slots: providerSlots,
+            accountKeys: Dictionary(uniqueKeysWithValues: accountKeys.map { ($0.key.rawValue, $0.value) }))
+        do {
+            defaults.set(try JSONEncoder.quota.encode(stored), forKey: Self.quotaStateKey)
+        } catch {
+            Self.logger.error("Quota state save failed: \(error)")
+        }
+    }
+
+    // A new account context: an opaque id, no readings yet.
+    private static func emptySlot(_ provider: QuotaProvider) -> ProviderSlot {
+        ProviderSlot(provider: provider, generation: UUID().uuidString, acceptedAttempt: 0,
+                     observation: nil, lastAttempt: nil)
     }
 
     // MARK: - Helpers
