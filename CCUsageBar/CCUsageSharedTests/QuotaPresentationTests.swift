@@ -100,6 +100,39 @@ final class QuotaPresentationTests: XCTestCase {
         XCTAssertEqual(shown[0].windows.map(\.window.id), ["claude:5h", "claude:7d", "claude:fable", "claude:opus"])
     }
 
+    func testProvidersRatingDecidesTheWarningAndOnlyCurrentReadingsWarn() {
+        func rated(_ id: String, _ used: Double, _ severity: QuotaSeverity?) -> QuotaWindow {
+            var window = Fixtures.window(id, id, minutes: 10_080, used: used, resetsIn: 86_400)
+            window.severity = severity
+            return window
+        }
+        let windows = [rated("a", 90, .normal), rated("b", 10, .warning), rated("c", 10, .critical),
+                       rated("d", QuotaPresentation.warningPercent, nil), rated("e", 79, nil)]
+        let current = present(slot(observedAt: observedAt, windows: windows), at: 60)
+        XCTAssertEqual(current.windows.map(\.isWarning), [false, true, true, true, false])
+        let outdated = present(slot(observedAt: observedAt, windows: windows), at: QuotaPresentation.outdatedAfter)
+        XCTAssertFalse(outdated.windows.contains(where: \.isWarning))
+    }
+
+    func testCapsFollowTheAccountWideWindowsAndDollarLimitsComeLast() {
+        var dollars = Fixtures.window("claude:dollars:x", "Dollar limit", minutes: nil, used: 1, resetsIn: nil)
+        dollars.dollars = DollarAmounts(used: 2.5, limit: 250)
+        let windows = [
+            Fixtures.window("claude:surface:cowork", "Cowork", minutes: 10_080, used: 1, resetsIn: nil, scope: .surface),
+            Fixtures.window("claude:model:fable", "Fable", minutes: 10_080, used: 1, resetsIn: nil, scope: .model),
+            dollars,
+            Fixtures.window("claude:7d", "Weekly", minutes: 10_080, used: 1, resetsIn: nil),
+        ]
+        XCTAssertEqual(present(slot(observedAt: observedAt, windows: windows), at: 60).windows.map(\.window.id),
+                       ["claude:7d", "claude:model:fable", "claude:surface:cowork", "claude:dollars:x"])
+    }
+
+    func testDollarTextUsesWholeDollars() {
+        let locale = Locale(identifier: "en_US")
+        XCTAssertEqual(DollarAmounts(used: 14.477388, limit: 250).text(locale: locale), "$14 of $250")
+        XCTAssertEqual(DollarAmounts(used: 1_234.5, limit: 2_000).text(locale: locale), "$1,234 of $2,000")
+    }
+
     func testShortNamesMatchTheLengthNames() {
         let minutes = [300, 299, 10_080, 10_081, 4_320, 120, 90]
         XCTAssertEqual(minutes.map { QuotaWindow.shortName(minutes: $0) }, ["5h", "5h", "Wk", "Wk", "3d", "2h", "90m"])

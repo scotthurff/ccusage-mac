@@ -77,12 +77,22 @@ struct QuotaPresentation {
         }
     }
 
-    // Account-wide windows before model caps, shorter windows first, then id.
+    // Account-wide windows, then model caps, then product caps, then dollar
+    // limits; shorter windows first, then id.
     private static func windowOrder(_ a: QuotaWindow, _ b: QuotaWindow) -> Bool {
-        if a.scope != b.scope { return a.scope == .provider }
+        if rank(a) != rank(b) { return rank(a) < rank(b) }
         let aMinutes = a.durationMinutes ?? .max, bMinutes = b.durationMinutes ?? .max
         if aMinutes != bMinutes { return aMinutes < bMinutes }
         return a.id < b.id
+    }
+
+    private static func rank(_ window: QuotaWindow) -> Int {
+        if window.dollars != nil { return 3 }
+        switch window.scope {
+        case .provider: return 0
+        case .model: return 1
+        case .surface: return 2
+        }
     }
 }
 
@@ -121,6 +131,14 @@ struct WindowPresentation: Equatable {
     let state: WindowState
 
     var isConfirmedZero: Bool { state == .current && window.usedPercent == 0 }
+
+    // Only a current reading warns. The provider's own rating decides when it
+    // sends one; otherwise the shared warning line does.
+    var isWarning: Bool {
+        guard state == .current else { return false }
+        if let severity = window.severity { return severity != .normal }
+        return window.usedPercent >= QuotaPresentation.warningPercent
+    }
 }
 
 extension QuotaWindow {
@@ -140,6 +158,17 @@ extension QuotaWindow {
         if minutes % 1_440 == 0 { return "\(minutes / 1_440)d" }
         if minutes % 60 == 0 { return "\(minutes / 60)h" }
         return "\(minutes)m"
+    }
+}
+
+extension DollarAmounts {
+    // e.g. "$14 of $250"
+    func text(locale: Locale = .autoupdatingCurrent) -> String {
+        "\(Self.whole(used, locale)) of \(Self.whole(limit, locale))"
+    }
+
+    static func whole(_ amount: Double, _ locale: Locale = .autoupdatingCurrent) -> String {
+        "$" + amount.formatted(.number.precision(.fractionLength(0)).locale(locale))
     }
 }
 

@@ -151,10 +151,8 @@ final class AppStateQuotaTests: XCTestCase {
         XCTAssertFalse(state.hasLimitsData)
         XCTAssertNil(state.hottestLimit)
         XCTAssertEqual(state.menuBarLabel, "--")
-        let row = MacQuotaDisplay.rows(state.presentation(.claude), title: "CLAUDE")
-        XCTAssertEqual(row.count, 1)
-        XCTAssertNil(row[0].short)
-        XCTAssertNil(row[0].long)
+        XCTAssertEqual(MacQuotaDisplay.gauges(state.presentation(.claude)), [])
+        XCTAssertEqual(MacQuotaDisplay.emptyText(state.presentation(.claude)), "No reading yet")
     }
 
     // MARK: Ordering
@@ -271,13 +269,13 @@ final class AppStateQuotaTests: XCTestCase {
         claude.push(success(claudeObservation(at: t0, fable: 10)))
         let state = makeState()
         await state.refreshQuotas()
-        XCTAssertEqual(MacQuotaDisplay.rows(state.presentation(.claude), title: "CLAUDE").map(\.title), ["CLAUDE", "FABLE"])
+        XCTAssertEqual(MacQuotaDisplay.gauges(state.presentation(.claude)).map(\.label), ["5-hour", "Weekly", "Fable"])
 
         clock.advance(minutes: 15)
         claude.push(success(claudeObservation(at: clock.now, fable: nil)))
         await state.refreshQuotas()
         XCTAssertEqual(state.slot(.claude).observation?.windows.map(\.id), ["claude:5h", "claude:7d"])
-        XCTAssertEqual(MacQuotaDisplay.rows(state.presentation(.claude), title: "CLAUDE").map(\.title), ["CLAUDE"])
+        XCTAssertEqual(MacQuotaDisplay.gauges(state.presentation(.claude)).map(\.label), ["5-hour", "Weekly"])
     }
 
     // MARK: Migration and relaunch
@@ -370,15 +368,15 @@ final class AppStateQuotaTests: XCTestCase {
                        "the Mac reads the same shared policy the phone uses")
         XCTAssertEqual(presentation.windows.map(\.state), [.resetPassedUnconfirmed, .current])
 
-        let row = MacQuotaDisplay.rows(presentation, title: "CLAUDE")[0]
-        let fiveHour = MacQuotaDisplay.gauge(try! XCTUnwrap(row.short))
-        XCTAssertEqual(fiveHour.percentText, "62%", "never shown as a verified 0%")
+        let gauges = MacQuotaDisplay.gauges(presentation)
+        let fiveHour = gauges[0]
+        XCTAssertEqual(fiveHour.valueText, "62%", "never shown as a verified 0%")
         XCTAssertTrue(fiveHour.isStruckThrough)
         XCTAssertEqual(fiveHour.tone, .neutral)
         XCTAssertNil(fiveHour.resetsAt)
 
-        let weekly = MacQuotaDisplay.gauge(try! XCTUnwrap(row.long))
-        XCTAssertEqual(weekly.percentText, "30%")
+        let weekly = gauges[1]
+        XCTAssertEqual(weekly.valueText, "30%")
         XCTAssertFalse(weekly.isStruckThrough)
         XCTAssertEqual(weekly.tone, .normal)
         XCTAssertNotNil(weekly.resetsAt)
@@ -402,43 +400,59 @@ final class AppStateQuotaTests: XCTestCase {
         let presentation = state.presentation(.claude)
         XCTAssertEqual(presentation.freshness, .outdated(.aged))
         XCTAssertEqual(MacQuotaDisplay.ageText(presentation), "1h ago")
-        let gauge = MacQuotaDisplay.gauge(MacQuotaDisplay.rows(presentation, title: "CLAUDE")[0].short!)
-        XCTAssertEqual(gauge.percentText, "85%")
+        let gauge = MacQuotaDisplay.gauges(presentation)[0]
+        XCTAssertEqual(gauge.valueText, "85%")
         XCTAssertEqual(gauge.tone, .neutral, "dated history is shown without the warning color")
         XCTAssertFalse(gauge.isStruckThrough)
+    }
+
+    func testMenuBarAndPopoverFollowAnthropicsRatingAndShowDollars() async {
+        var weekly = window("claude:7d", "Weekly", minutes: 10_080, used: 30, resetsAt: t0.addingTimeInterval(86_400))
+        weekly.severity = .warning
+        var dollars = window("claude:dollars:x", "Dollar limit", minutes: 1, used: 5.8, resetsAt: nil)
+        dollars.durationMinutes = nil
+        dollars.dollars = DollarAmounts(used: 14.48, limit: 250)
+        var cap = window("claude:surface:claude-code", "Claude Code", minutes: 10_080, used: 45, resetsAt: nil, scope: .surface)
+        cap.severity = .normal
+        claude.push(success(QuotaObservation(source: "claude-oauth-usage", observedAt: t0, windows: [weekly, dollars, cap],
+                                             resetCredits: nil, creditBalance: nil)))
+        let state = makeState()
+        await state.refreshQuotas()
+        XCTAssertTrue(state.limitWarningActive, "Anthropic rates the weekly window a warning at 30%")
+        XCTAssertEqual(state.menuBarLabel, "CC 45%", "a product cap's hint is its initials")
+
+        let gauges = MacQuotaDisplay.gauges(state.presentation(.claude))
+        XCTAssertEqual(gauges.map(\.label), ["Weekly", "Claude Code", "Dollar limit"], "only listed windows; dollar limits last")
+        XCTAssertEqual(gauges[0].tone, .warning)
+        XCTAssertTrue(gauges[1].isCap)
+        XCTAssertEqual(gauges[1].tone, .normal)
+        XCTAssertEqual(gauges[2].valueText, DollarAmounts(used: 14.48, limit: 250).text())
+        XCTAssertFalse(gauges[2].isCap)
+        XCTAssertTrue(gauges[2].resetShowsWeekday, "a reset of unknown length shows its weekday")
     }
 
     func testCurrentZeroIsAConfirmedZero() async {
         claude.push(success(claudeObservation(at: t0, fiveHour: 0, weekly: 30, fable: nil)))
         let state = makeState()
         await state.refreshQuotas()
-        let gauge = MacQuotaDisplay.gauge(MacQuotaDisplay.rows(state.presentation(.claude), title: "CLAUDE")[0].short!)
-        XCTAssertEqual(gauge.percentText, "0%")
+        let gauge = MacQuotaDisplay.gauges(state.presentation(.claude))[0]
+        XCTAssertEqual(gauge.valueText, "0%")
         XCTAssertEqual(gauge.tone, .normal)
         XCTAssertEqual(MacQuotaDisplay.ageText(state.presentation(.claude)), "now")
     }
 
-    func testRowsPlaceWindowsByLengthAndNeverDropOne() {
+    func testEveryWindowGetsItsOwnLineInTheSharedOrder() {
         let observation = QuotaObservation(source: "codex-app-server", observedAt: t0, windows: [
             window("codex:codex:10080", "Weekly", minutes: 10_080, used: 13, resetsAt: nil),
-            window("codex:codex:300", "5-hour", minutes: 300, used: 40, resetsAt: nil),
+            window("codex:codex:300", "5-hour", minutes: 300, used: 40, resetsAt: t0.addingTimeInterval(3600)),
             window("codex:codex:60", "1-hour", minutes: 60, used: 1, resetsAt: nil),
             window("codex:spark:300", "Spark", minutes: 300, used: 4, resetsAt: nil, scope: .model),
         ], resetCredits: nil, creditBalance: nil)
         let slot = ProviderSlot(provider: .codex, generation: "g", acceptedAttempt: 1, observation: observation, lastAttempt: nil)
-        let rows = MacQuotaDisplay.rows(QuotaPresentation(now: t0).provider(slot), title: "CODEX")
-        // The standard 5-hour and weekly windows own the provider row; any
-        // other account-wide window gets a row of its own.
-        XCTAssertEqual(rows.map(\.title), ["CODEX", "1-HOUR", "SPARK"])
-        XCTAssertEqual(rows[0].short?.window.id, "codex:codex:300")
-        XCTAssertEqual(rows[0].long?.window.id, "codex:codex:10080")
-        XCTAssertEqual(rows[1].short?.window.id, "codex:codex:60")
-        XCTAssertNil(rows[1].long)
-        XCTAssertEqual(rows[2].short?.window.id, "codex:spark:300")
-        XCTAssertFalse(rows[0].isModel)
-        XCTAssertTrue(rows[2].isModel)
-        XCTAssertEqual(MacQuotaDisplay.gauge(rows[0].short!).label, "5h")
-        XCTAssertEqual(MacQuotaDisplay.gauge(rows[0].long!).label, "wk")
-        XCTAssertEqual(MacQuotaDisplay.gauge(rows[1].short!).label, "1h")
+        let gauges = MacQuotaDisplay.gauges(QuotaPresentation(now: t0).provider(slot))
+        XCTAssertEqual(gauges.map(\.label), ["1-hour", "5-hour", "Weekly", "Spark"])
+        XCTAssertEqual(gauges.map(\.isCap), [false, false, false, true])
+        XCTAssertEqual(gauges.map(\.resetShowsWeekday), [false, false, true, false])
+        XCTAssertNil(MacQuotaDisplay.emptyText(QuotaPresentation(now: t0).provider(slot)))
     }
 }

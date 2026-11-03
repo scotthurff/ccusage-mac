@@ -201,9 +201,9 @@ private struct ProviderCard: View {
     }
 
     // The widget's rule: past, outdated, or unconfirmed values are gray
-    // history, never a fresh reading; Claude's model caps use the Fable color.
+    // history, never a fresh reading; Claude's caps use the Fable color.
     private func fill(_ window: WindowPresentation) -> Color {
-        UsagePalette.barFill(usedPercent: window.window.usedPercent, isStale: window.state != .current,
+        UsagePalette.barFill(isWarning: window.isWarning, isStale: window.state != .current,
                              tint: QuotaWidgetModel.tint(provider.provider, scope: window.window.scope))
     }
 

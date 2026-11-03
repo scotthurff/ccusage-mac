@@ -287,6 +287,17 @@ final class PhoneStateTests: XCTestCase {
         XCTAssertEqual(label(2, outdated), "Claude Fable model limit, 0 percent used, resets Saturday 3:00 PM, outdated reading")
     }
 
+    func testProductCapAndDollarLimitWording() {
+        let surface = PhoneFixtures.window("claude:surface:claude-code", "Claude Code", minutes: 10_080, used: 4,
+                                           resetsAt: nil, scope: .surface)
+        var dollars = PhoneFixtures.window("claude:dollars:x", "Dollar limit", minutes: 1, used: 5.8, resetsAt: nil)
+        dollars.durationMinutes = nil
+        dollars.dollars = DollarAmounts(used: 14.48, limit: 250)
+        XCTAssertEqual(PhoneText.windowLabel(surface), "Claude Code · product limit")
+        XCTAssertEqual(PhoneText.percentUsed(dollars, locale: Self.english), "$14 of $250 used")
+        XCTAssertEqual(PhoneText.percentUsed(surface), "4% used")
+    }
+
     func testCodexCreditsWording() {
         let now = Self.utc(2026, 10, 14, 19, 0)
         let la = Self.calendar("America/Los_Angeles")

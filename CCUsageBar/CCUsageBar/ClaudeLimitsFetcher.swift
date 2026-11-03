@@ -57,40 +57,91 @@ actor ClaudeLimitsFetcher: QuotaCollector {
             Self.logger.error("Usage response was not a JSON object")
             return nil
         }
-        // Key present with null = no active window = a confirmed 0%;
-        // key absent or malformed = schema surprise = unknown (no window).
-        var windows: [QuotaWindow] = []
-        if let fiveHour = parseWindow(obj["five_hour"]) {
-            windows.append(fiveHourWindow(fiveHour.percent, resetsAt: fiveHour.resetsAt))
+        let rows = limitRows(obj["limits"])
+        var windows: [QuotaWindow]
+        if rows.contains(where: { $0.scope == .provider }) {
+            // Anthropic's own list of bars decides which windows exist. One
+            // it leaves out is not shown, even if an older field still has it.
+            windows = rows
+        } else {
+            // Older replies list only model caps, so the account-wide windows
+            // come from the top-level fields. Key present with null = no
+            // active window = a confirmed 0%; key absent or malformed =
+            // schema surprise = unknown (no window).
+            windows = []
+            if let fiveHour = parseWindow(obj["five_hour"]) {
+                windows.append(fiveHourWindow(fiveHour.percent, resetsAt: fiveHour.resetsAt))
+            }
+            if let weekly = parseWindow(obj["seven_day"]) {
+                windows.append(weeklyWindow(weekly.percent, resetsAt: weekly.resetsAt))
+            }
+            guard !windows.isEmpty else {
+                Self.logger.error("Usage response missing account-wide limits")
+                return nil
+            }
+            windows += rows
         }
-        if let weekly = parseWindow(obj["seven_day"]) {
-            windows.append(weeklyWindow(weekly.percent, resetsAt: weekly.resetsAt))
-        }
-        guard !windows.isEmpty else {
-            Self.logger.error("Usage response missing five_hour and seven_day")
-            return nil
-        }
-        windows += scopedWindows(obj["limits"])
+        windows += dollarWindows(obj)
         return QuotaObservation(source: source, observedAt: observedAt, windows: windows,
                                 resetCredits: nil, creditBalance: nil)
     }
 
-    // Per-model weekly caps (e.g. Fable) from the `limits[]` array:
-    // {kind: "weekly_scoped", percent, resets_at, scope.model.display_name}.
-    // The whole list is replaced on every read, so a removed cap disappears.
-    private static func scopedWindows(_ value: Any?) -> [QuotaWindow] {
+    // Anthropic's list of bars, `limits[]`, in its order:
+    // {kind, percent, resets_at, severity, scope.model or scope.surface}.
+    // kind is "session" (the 5-hour window), "weekly_all", or "weekly_scoped"
+    // (one model, e.g. Fable, or one product, e.g. Claude Code). Other kinds
+    // are skipped. The whole list is replaced on every read, so a removed
+    // bar disappears.
+    private static func limitRows(_ value: Any?) -> [QuotaWindow] {
         var windows: [QuotaWindow] = []
         for case let entry as [String: Any] in value as? [Any] ?? [] {
-            guard entry["kind"] as? String == "weekly_scoped",
-                  let percent = QuotaValues.percent(entry["percent"]),
-                  let scope = entry["scope"] as? [String: Any],
-                  let model = scope["model"] as? [String: Any],
-                  let name = model["display_name"] as? String, !name.isEmpty else { continue }
-            let window = modelWindow(name, percent, resetsAt: (entry["resets_at"] as? String).flatMap(parseISO8601))
+            guard let percent = QuotaValues.percent(entry["percent"]) else { continue }
+            let resetsAt = (entry["resets_at"] as? String).flatMap(parseISO8601)
+            let scope = entry["scope"] as? [String: Any]
+            var window: QuotaWindow
+            switch entry["kind"] as? String {
+            case "session":
+                window = fiveHourWindow(percent, resetsAt: resetsAt)
+            case "weekly_all":
+                window = weeklyWindow(percent, resetsAt: resetsAt)
+            case "weekly_scoped":
+                if let name = displayName(scope?["model"]) {
+                    window = modelWindow(name, percent, resetsAt: resetsAt)
+                } else if let name = displayName(scope?["surface"]) {
+                    window = surfaceWindow(name, percent, resetsAt: resetsAt)
+                } else {
+                    continue
+                }
+            default:
+                continue
+            }
+            window.severity = (entry["severity"] as? String).flatMap(QuotaSeverity.init(rawValue:))
             guard !windows.contains(where: { $0.id == window.id }) else { continue }
             windows.append(window)
         }
         return windows
+    }
+
+    private static func displayName(_ value: Any?) -> String? {
+        guard let name = (value as? [String: Any])?["display_name"] as? String, !name.isEmpty else { return nil }
+        return name
+    }
+
+    // Limits counted in dollars: {limit_dollars, used_dollars, utilization,
+    // resets_at, label?}. Anthropic files these under code names that change,
+    // so any top-level entry with a dollar limit counts.
+    private static func dollarWindows(_ obj: [String: Any]) -> [QuotaWindow] {
+        obj.keys.sorted().compactMap { key in
+            guard let entry = obj[key] as? [String: Any],
+                  let limit = QuotaValues.number(entry["limit_dollars"])?.doubleValue, limit.isFinite, limit > 0,
+                  let used = QuotaValues.number(entry["used_dollars"])?.doubleValue, used.isFinite, used >= 0 else { return nil }
+            let percent = QuotaValues.percent(entry["utilization"]) ?? used / limit * 100
+            guard QuotaSnapshot.usedPercentRange.contains(percent) else { return nil }
+            let label = (entry["label"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "Dollar limit"
+            return QuotaWindow(id: "claude:dollars:\(key)", label: label, durationMinutes: nil, usedPercent: percent,
+                               resetsAt: (entry["resets_at"] as? String).flatMap(parseISO8601), scope: .provider,
+                               dollars: DollarAmounts(used: used, limit: limit))
+        }
     }
 
     // Stable ids and labels, shared with the legacy cache migration.
@@ -105,9 +156,17 @@ actor ClaudeLimitsFetcher: QuotaCollector {
     }
 
     static func modelWindow(_ name: String, _ percent: Double, resetsAt: Date?) -> QuotaWindow {
-        let slug = String(name.lowercased().map { $0.isLetter || $0.isNumber ? $0 : "-" })
-        return QuotaWindow(id: "claude:model:\(slug)", label: name, durationMinutes: 10_080, usedPercent: percent,
-                           resetsAt: resetsAt, scope: .model)
+        QuotaWindow(id: "claude:model:\(slug(name))", label: name, durationMinutes: 10_080, usedPercent: percent,
+                    resetsAt: resetsAt, scope: .model)
+    }
+
+    static func surfaceWindow(_ name: String, _ percent: Double, resetsAt: Date?) -> QuotaWindow {
+        QuotaWindow(id: "claude:surface:\(slug(name))", label: name, durationMinutes: 10_080, usedPercent: percent,
+                    resetsAt: resetsAt, scope: .surface)
+    }
+
+    private static func slug(_ name: String) -> String {
+        String(name.lowercased().map { $0.isLetter || $0.isNumber ? $0 : "-" })
     }
 
     private static func parseWindow(_ value: Any?) -> (percent: Double, resetsAt: Date?)? {

@@ -82,6 +82,70 @@ final class ClaudeLimitsFetcherTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(parse(#"{"seven_day": {"utilization": 1}, "limits": []}"#)).windows.filter { $0.scope == .model }, [])
     }
 
+    // Trimmed from a live reply (November 2026): no 5-hour entry, a code-named
+    // dollar limit, and top-level fields the list now overrides.
+    func testAnthropicsListOfBarsDecidesWhichWindowsExist() throws {
+        let observation = try XCTUnwrap(parse(#"""
+        {"five_hour": null,
+         "seven_day": {"utilization": 2.0, "resets_at": "2026-11-07T22:00:00.559862+00:00", "limit_dollars": null, "used_dollars": null},
+         "seven_day_opus": null,
+         "iguana_necktie": {"utilization": 5.7909552, "resets_at": "2026-11-05T07:59:00+00:00",
+                            "limit_dollars": 250, "used_dollars": 14.477388, "remaining_dollars": 235.522612, "locked_reason": null},
+         "extra_usage": {"is_enabled": false, "monthly_limit": null, "used_credits": null},
+         "spend": {"used": {"amount_minor": 0}, "limit": null, "percent": 0, "severity": "normal"},
+         "limits": [
+           {"kind": "weekly_all", "group": "weekly", "percent": 2, "severity": "normal",
+            "resets_at": "2026-11-07T22:00:00.559862+00:00", "scope": null, "is_active": true},
+           {"kind": "weekly_scoped", "group": "weekly", "percent": 0, "severity": "normal",
+            "resets_at": "2026-11-07T22:00:00+00:00",
+            "scope": {"model": {"id": null, "display_name": "Fable"}, "surface": null}, "is_active": false}
+         ]}
+        """#))
+        let weeklyReset = Date(timeIntervalSince1970: 1_794_088_800)
+        XCTAssertEqual(observation.windows, [
+            QuotaWindow(id: "claude:7d", label: "Weekly", durationMinutes: 10_080, usedPercent: 2,
+                        resetsAt: weeklyReset, scope: .provider, severity: .normal),
+            QuotaWindow(id: "claude:model:fable", label: "Fable", durationMinutes: 10_080, usedPercent: 0,
+                        resetsAt: weeklyReset, scope: .model, severity: .normal),
+            QuotaWindow(id: "claude:dollars:iguana_necktie", label: "Dollar limit", durationMinutes: nil,
+                        usedPercent: 5.7909552, resetsAt: Date(timeIntervalSince1970: 1_793_865_540), scope: .provider,
+                        dollars: DollarAmounts(used: 14.477388, limit: 250)),
+        ], "no 5-hour bar: the list leaves it out, even though five_hour is still sent")
+    }
+
+    func testListedSessionAndProductCapsKeepAnthropicsRatings() throws {
+        let observation = try XCTUnwrap(parse(#"""
+        {"five_hour": {"utilization": 3}, "seven_day": {"utilization": 70},
+         "limits": [
+           {"kind": "session", "percent": 81, "severity": "warning", "resets_at": "2026-11-03T04:00:00+00:00"},
+           {"kind": "weekly_all", "percent": 70, "severity": "critical"},
+           {"kind": "weekly_scoped", "percent": 40, "severity": "brand-new-level",
+            "scope": {"model": null, "surface": {"display_name": "Claude Code"}}},
+           {"kind": "weekly_scoped", "percent": 9, "scope": {"model": null, "surface": null}},
+           {"kind": "daily_mystery", "percent": 12}
+         ]}
+        """#))
+        XCTAssertEqual(observation.windows.map(\.id), ["claude:5h", "claude:7d", "claude:surface:claude-code"])
+        XCTAssertEqual(observation.windows.map(\.usedPercent), [81, 70, 40], "the list's numbers win over the older fields")
+        XCTAssertEqual(observation.windows.map(\.severity), [.warning, .critical, nil], "an unknown rating falls back to the warning line")
+        XCTAssertEqual(observation.windows[2].label, "Claude Code")
+        XCTAssertEqual(observation.windows[2].scope, .surface)
+        XCTAssertEqual(observation.windows[2].durationMinutes, 10_080)
+    }
+
+    func testDollarLimitNeedsAPositiveLimitAndUsedAmount() throws {
+        let observation = try XCTUnwrap(parse(#"""
+        {"seven_day": {"utilization": 1},
+         "zero_limit": {"limit_dollars": 0, "used_dollars": 0},
+         "no_used": {"limit_dollars": 100, "used_dollars": null},
+         "named": {"label": "Cowork credit", "limit_dollars": 40, "used_dollars": 10}}
+        """#))
+        let dollars = observation.windows.filter { $0.dollars != nil }
+        XCTAssertEqual(dollars.map(\.id), ["claude:dollars:named"])
+        XCTAssertEqual(dollars.first?.label, "Cowork credit")
+        XCTAssertEqual(dollars.first?.usedPercent, 25, "the share is worked out when utilization is missing")
+    }
+
     func testExpiredTokenIsSkipped() {
         let expired = #"{"claudeAiOauth": {"accessToken": "t", "expiresAt": 1000}}"#
         XCTAssertNil(ClaudeLimitsFetcher.extractAccessToken(from: expired))

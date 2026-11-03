@@ -17,98 +17,92 @@ struct LimitsView: View {
                     Spacer()
                 }
             } else {
-                providerRows(.claude, title: "CLAUDE", color: Provider.claude.color, modelColor: Provider.fableColor)
-                providerRows(.codex, title: "CODEX", color: Provider.codex.color, modelColor: Provider.codex.color)
+                // One grid for both providers, so names, values, and resets
+                // line up in columns whatever their lengths.
+                Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 6) {
+                    providerRows(.claude, color: Provider.claude.color, capColor: Provider.fableColor)
+                    providerRows(.codex, color: Provider.codex.color, capColor: Provider.codex.color)
+                }
             }
         }
         .padding(.horizontal)
-        .padding(.vertical, 8)
+        .padding(.vertical, 10)
     }
 
-    // The provider row carries its 5-hour and weekly gauges and the reading's
-    // age; model caps and any other windows follow on their own rows.
+    // A header with the reading's age, then one line per limit the provider
+    // reported, in the shared order.
     @ViewBuilder
-    private func providerRows(_ provider: QuotaProvider, title: String, color: Color, modelColor: Color) -> some View {
+    private func providerRows(_ provider: QuotaProvider, color: Color, capColor: Color) -> some View {
         let presentation = appState.presentation(provider)
-        let rows = MacQuotaDisplay.rows(presentation, title: title)
-        ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
-            HStack(spacing: 8) {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(row.title)
-                        .font(.caption2.weight(.medium))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                    if index == 0, let age = MacQuotaDisplay.ageText(presentation) {
-                        Text(age)
-                            .font(.caption2)
-                            .foregroundStyle(MacQuotaDisplay.isOutdated(presentation)
-                                             ? AnyShapeStyle(Color.orange) : AnyShapeStyle(.tertiary))
-                            .help(Self.ageHelp(presentation))
-                    }
-                }
-                .frame(width: 56, alignment: .leading)
-                let rowColor = row.isModel ? modelColor : color
-                slot(row.short, placeholder: index == 0 ? "5h" : nil, color: rowColor)
-                slot(row.long, placeholder: index == 0 ? "wk" : nil, color: rowColor)
+        GridRow {
+            header(provider, presentation)
+                .gridCellColumns(4)
+                .padding(.top, provider == .claude ? 0 : 6)
+        }
+        if let empty = MacQuotaDisplay.emptyText(presentation) {
+            GridRow {
+                Text(empty)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .gridCellColumns(4)
             }
         }
-    }
-
-    // A gauge, an empty "--" gauge on the provider row, or blank space that
-    // keeps the columns aligned.
-    @ViewBuilder
-    private func slot(_ window: WindowPresentation?, placeholder: String?, color: Color) -> some View {
-        if let window {
-            gauge(MacQuotaDisplay.gauge(window), minutes: window.window.durationMinutes, color: color)
-        } else if let placeholder {
-            HStack(spacing: 4) {
-                Text(placeholder)
-                    .font(.caption2)
+        ForEach(MacQuotaDisplay.gauges(presentation), id: \.id) { gauge in
+            GridRow {
+                // At least as wide as the day column below, so the limit bars
+                // start where the cost bars do.
+                // Uppercase, like the day labels below.
+                Text(gauge.label.uppercased())
                     .foregroundStyle(.secondary)
-                track(fill: 0, color: color)
-                Text("--")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .help("No reading yet")
-        } else {
-            Color.clear
-                .frame(maxWidth: .infinity, maxHeight: 1)
-        }
-    }
-
-    private func gauge(_ gauge: MacGauge, minutes: Int?, color: Color) -> some View {
-        HStack(spacing: 4) {
-            Text(gauge.label)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-            track(fill: gauge.fill, color: Self.fillColor(gauge.tone, base: color))
-            // An outdated number reads as dated history; a passed reset is struck through.
-            Text(gauge.percentText)
-                .font(.caption2)
-                .strikethrough(gauge.isStruckThrough)
-                .foregroundStyle(gauge.tone == .neutral ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
-            if let reset = gauge.resetsAt {
-                Text("·\(Self.formatReset(reset, weekly: (minutes ?? 0) >= 1_440))")
-                    .font(.caption2)
+                    .lineLimit(1)
+                    .frame(minWidth: 70, alignment: .leading)
+                bar(gauge, color: gauge.isCap ? capColor : color)
+                // An outdated number reads as dated history; a passed reset is struck through.
+                Text(gauge.valueText)
+                    .strikethrough(gauge.isStruckThrough)
+                    .foregroundStyle(gauge.tone == .neutral ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
+                    .gridColumnAlignment(.trailing)
+                Text(gauge.resetsAt.map { Self.formatReset($0, weekly: gauge.resetShowsWeekday) } ?? "")
                     .foregroundStyle(.tertiary)
-                    .fixedSize()
+                    .gridColumnAlignment(.trailing)
             }
+            .font(.caption)
+            .help(gauge.help)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .help(gauge.help)
     }
 
-    private func track(fill: Double, color: Color) -> some View {
-        ZStack(alignment: .leading) {
-            Capsule()
-                .fill(Color.primary.opacity(0.12))
-            Capsule()
-                .fill(color)
-                .frame(width: 34 * fill / 100)
+    private func header(_ provider: QuotaProvider, _ presentation: ProviderPresentation) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(provider.displayName.uppercased())
+                .font(.caption2.weight(.semibold))
+                .tracking(0.6)
+            Spacer()
+            if let age = MacQuotaDisplay.ageText(presentation) {
+                Text(age)
+                    .font(.caption2)
+                    .foregroundStyle(MacQuotaDisplay.isOutdated(presentation)
+                                     ? AnyShapeStyle(Color.orange) : AnyShapeStyle(.tertiary))
+                    .help(Self.ageHelp(presentation))
+            }
         }
-        .frame(width: 34, height: 5)
+    }
+
+    // Fills the space between the name and the value. Any use above zero
+    // shows at least a dot.
+    private func bar(_ gauge: MacGauge, color: Color) -> some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color.primary.opacity(0.1))
+                if gauge.fill > 0 {
+                    Capsule()
+                        .fill(Self.fillColor(gauge.tone, base: color))
+                        .frame(width: max(geometry.size.height, geometry.size.width * gauge.fill / 100))
+                }
+            }
+        }
+        .frame(minWidth: 60, maxWidth: .infinity)
+        .frame(height: 5)
     }
 
     private static func fillColor(_ tone: MacGauge.Tone, base: Color) -> Color {

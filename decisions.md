@@ -1,5 +1,27 @@
 # Decisions
 
+## 2026-11-02: The popover lists one limit per line
+
+**Decision**: The menu bar popover no longer pairs a short window and a long one side by side under a provider name. Each provider gets a header with the reading's age, then one line per limit: name, bar, value, reset. One grid holds both providers, so values and resets line up in columns and each column grows to fit its widest entry. The name column is at least as wide as the day column below, so limit bars start where the cost bars do. A provider without limits shows "No reading yet" or "No limits in the last reading" instead of empty gauges. In the shared order, dollar limits now come after model and product caps, so Fable sits right under the weekly bar it belongs to.
+
+**Why**: Once Anthropic stopped listing a 5-hour window, the paired layout left an empty "5h --" gauge that looked like a missing reading. Bars were 34 points wide, and "$14 of $250" was cut off. Checked by drawing the real popover, phone app, and widget from the live reading in light and dark, plus outdated, warning, and empty cases.
+
+## 2026-11-02: Claude's bars follow Anthropic's own list
+
+**Decision**:
+- Anthropic's usage reply now carries a list of bars (`limits[]`). When that list includes an account-wide bar, it decides which Claude windows exist, in Anthropic's order. A window it leaves out is not shown, even if an older top-level field still carries it. Older replies that list only model caps still use the top-level 5-hour and weekly fields.
+- The live reply on 2026-11-02 listed weekly and Fable only. Scott confirmed claude.ai no longer shows a 5-hour bar, so the trackers show one only when Anthropic lists it again.
+- Each bar keeps Anthropic's rating (normal, warning, critical). A warning or critical rating turns the bar and the menu bar warning red; normal never does, whatever the percentage. Codex sends no rating, so the 80% line still applies there.
+- A weekly cap can now belong to a product, like Claude Code or Cowork, as well as a model. Product caps get their own bars and the darker Fable color. On the menu bar they use their initials ("CC").
+- Any top-level entry with a dollar limit becomes a "Dollar limit" bar reading "$14 of $250", unless the entry names itself. Anthropic files these under code names that change, so no name is matched. The live reply had one: $250, resetting Nov 4 at 11:59 PM Pacific. Its meaning is not confirmed.
+- Not shown, by Scott's choice: the weekly split by product (Claude Code, Chats, Cowork, Other) and Fable's allowance as a share of the weekly limit (50%). Both are in the reply.
+
+**Snapshot format**: Windows gain two optional fields, `severity` and `dollars`, and scope gains `surface`. The version stays 1. Older phone builds ignore the new fields, but they would reject a whole snapshot that contains a product cap. Reinstall the phone app before one appears.
+
+**Why**: Anthropic changed the usage bars over the weekend of 2026-10-31. Claude Code 2.1.316 documents the list as the server's own: which bars apply, their labels, ratings, and order are the server's, so a client draws them as sent.
+
+**Also found**: Every Claude reading failed from about 2026-10-29 until a fresh `claude` login on 2026-11-02. The saved login had a blank expiry and Anthropic rejected it. The app treats that as expired and keeps the last reading, marked outdated. That is working as designed, but it ran unnoticed for five days.
+
 ## 2026-10-14: Superseded — local-log Codex limits and expiry-to-zero
 
 **Decision**: Two 2026-07-02 entries below no longer describe the app. "Official rate-limit percentages — Codex from session files" is replaced by the live `codex app-server` read; `CodexLimitsReader.swift` was deleted. "Expiry-zeroing lives in one display-time gate" is replaced by the shared presentation rule in `Shared/QuotaPresentation.swift`: a passed reset keeps the last value, marked unconfirmed, until a new reading arrives. Readings also go outdated after 60 minutes or after a failed attempt. The Claude OAuth half of the first entry, and the hold-last-known failure policy, still apply.

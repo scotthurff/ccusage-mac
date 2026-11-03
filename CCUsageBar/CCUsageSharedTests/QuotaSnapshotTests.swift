@@ -26,6 +26,32 @@ final class QuotaSnapshotTests: XCTestCase {
         ])
     }
 
+    func testRatingsAndDollarLimitsRoundTripWithinTheAllowlist() throws {
+        var snapshot = Fixtures.snapshot()
+        snapshot.providers[0].observation?.windows[1].severity = .warning
+        snapshot.providers[0].observation?.windows.append(
+            QuotaWindow(id: "claude:dollars:x", label: "Dollar limit", durationMinutes: nil, usedPercent: 5.8,
+                        resetsAt: nil, scope: .provider, dollars: DollarAmounts(used: 14.48, limit: 250)))
+        snapshot.providers[0].observation?.windows.append(
+            Fixtures.window("claude:surface:claude-code", "Claude Code", minutes: 10_080, used: 4, resetsIn: nil, scope: .surface))
+        let data = try snapshot.encoded()
+        XCTAssertEqual(try QuotaSnapshot.decode(from: data).get(), snapshot)
+        let added = Self.keyPaths(try JSONSerialization.jsonObject(with: data))
+            .subtracting(Self.keyPaths(try JSONSerialization.jsonObject(with: Fixtures.snapshot().encoded())))
+        XCTAssertEqual(added, ["providers.observation.windows.severity", "providers.observation.windows.dollars",
+                               "providers.observation.windows.dollars.used", "providers.observation.windows.dollars.limit"])
+    }
+
+    func testRejectsInvalidDollarAmounts() {
+        for bad in [DollarAmounts(used: -1, limit: 250), DollarAmounts(used: 1, limit: 0), DollarAmounts(used: .nan, limit: 250)] {
+            var snapshot = Fixtures.snapshot()
+            snapshot.providers[0].observation?.windows[0].dollars = bad
+            XCTAssertThrowsError(try snapshot.validate()) { error in
+                XCTAssertEqual(error as? SnapshotDecodeError, .invalidValue("dollars"))
+            }
+        }
+    }
+
     func testUnknownFieldsAndProvidersAreTolerated() throws {
         var object = try XCTUnwrap(JSONSerialization.jsonObject(with: Fixtures.snapshot().encoded()) as? [String: Any])
         object["futureTopLevelField"] = "ignored"
