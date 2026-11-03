@@ -11,10 +11,10 @@ enum UsagePalette {
     static let background = Color(white: 0.11)
 
     // A limit's bar color in the widget and the app: gray for an outdated or
-    // unconfirmed value, red from the warning line up, otherwise the tint.
-    static func barFill(usedPercent: Double, isStale: Bool, tint: WidgetTint) -> Color {
+    // unconfirmed value, red for a warning, otherwise the tint.
+    static func barFill(isWarning: Bool, isStale: Bool, tint: WidgetTint) -> Color {
         if isStale { return .gray.opacity(0.5) }
-        return usedPercent >= QuotaPresentation.warningPercent ? .red : tint.color
+        return isWarning ? .red : tint.color
     }
 }
 
@@ -60,12 +60,16 @@ struct WidgetRow: Identifiable, Equatable {
     let label: String        // "Fable weekly"
     let shortLabel: String   // "Fable"
     let usedPercent: Double
+    let dollars: DollarAmounts?
     let resetsAt: Date?
     let longWindow: Bool     // a day or longer: its reset shows a weekday
-    let isModelCap: Bool
+    let scope: WindowScope
     let state: WindowState
+    let isWarning: Bool
     let tint: WidgetTint
 
+    // A model or product cap inside the provider's allowance.
+    var isCap: Bool { scope != .provider }
     // Outdated or past its reset: drawn gray, with the last number kept.
     var isStale: Bool { state != .current }
     var link: URL { QuotaWidgetModel.link(for: provider) }
@@ -86,13 +90,13 @@ struct WidgetSection: Identifiable, Equatable {
     var link: URL { QuotaWidgetModel.link(for: provider) }
     var extrasLineCount: Int { (resetCredits == nil ? 0 : 1) + (creditBalance == nil ? 0 : 1) }
 
-    // The small size shows a model cap only when it is closer to its limit
-    // than every account-wide window, that is, when it's the one that binds.
-    // Only the closest such cap fits.
+    // The small size shows a model or product cap only when it is closer to
+    // its limit than every account-wide window, that is, when it's the one
+    // that binds. Only the closest such cap fits.
     var smallRows: [WidgetRow] {
-        guard let widest = rows.filter({ !$0.isModelCap }).map(\.usedPercent).max() else { return rows }
-        let binding = rows.filter { $0.isModelCap && $0.usedPercent > widest }.max { $0.usedPercent < $1.usedPercent }
-        return rows.filter { !$0.isModelCap || $0.id == binding?.id }
+        guard let widest = rows.filter({ !$0.isCap }).map(\.usedPercent).max() else { return rows }
+        let binding = rows.filter { $0.isCap && $0.usedPercent > widest }.max { $0.usedPercent < $1.usedPercent }
+        return rows.filter { !$0.isCap || $0.id == binding?.id }
     }
 }
 
@@ -117,10 +121,13 @@ enum QuotaWidgetModel {
     private static func section(_ provider: ProviderPresentation) -> WidgetSection {
         let rows = provider.windows.map { presented in
             let window = presented.window
+            // A window of unknown length shows its reset's weekday, which
+            // stays right however far off the reset is.
             return WidgetRow(id: window.id, provider: provider.provider, label: fullLabel(window),
-                             shortLabel: shortLabel(window), usedPercent: window.usedPercent, resetsAt: window.resetsAt,
-                             longWindow: (window.durationMinutes ?? 0) >= 1_440, isModelCap: window.scope == .model,
-                             state: presented.state, tint: tint(provider.provider, scope: window.scope))
+                             shortLabel: shortLabel(window), usedPercent: window.usedPercent, dollars: window.dollars,
+                             resetsAt: window.resetsAt, longWindow: (window.durationMinutes ?? .max) >= 1_440,
+                             scope: window.scope, state: presented.state, isWarning: presented.isWarning,
+                             tint: tint(provider.provider, scope: window.scope))
         }
         return WidgetSection(provider: provider.provider, name: provider.provider.displayName,
                              tint: tint(provider.provider, scope: .provider), freshness: provider.freshness,
@@ -128,33 +135,39 @@ enum QuotaWidgetModel {
                              creditBalance: provider.creditBalance)
     }
 
-    // Model caps inside Claude's allowance use the darker Fable color.
+    // Model and product caps inside Claude's allowance use the darker Fable color.
     static func tint(_ provider: QuotaProvider, scope: WindowScope) -> WidgetTint {
         switch provider {
-        case .claude: scope == .model ? .fable : .claude
+        case .claude: scope == .provider ? .claude : .fable
         case .codex: .codex
         default: .neutral
         }
     }
 
-    // A model cap's name gains its length when the name lacks it: "Fable weekly".
+    // A cap's name gains its length when the name lacks it: "Fable weekly".
     static func fullLabel(_ window: QuotaWindow) -> String {
-        guard window.scope == .model, let minutes = window.durationMinutes else { return window.label }
+        guard window.scope != .provider, let minutes = window.durationMinutes else { return window.label }
         let length = QuotaWindow.lengthName(minutes: minutes).lowercased()
         return window.label.lowercased().hasSuffix(length) ? window.label : "\(window.label) \(length)"
     }
 
-    // "5h" and "Wk" for account-wide windows; a model cap keeps its name.
+    // "5h" and "Wk" for account-wide windows, "$" for a dollar limit; a cap
+    // keeps its name.
     static func shortLabel(_ window: QuotaWindow) -> String {
+        if window.dollars != nil { return "$" }
         guard let minutes = window.durationMinutes else { return window.label }
         let short = QuotaWindow.shortName(minutes: minutes)
-        guard window.scope == .model else { return short }
+        guard window.scope != .provider else { return short }
         let suffix = " " + QuotaWindow.lengthName(minutes: minutes).lowercased()
         guard window.label.lowercased().hasSuffix(suffix) else { return window.label }
         return "\(window.label.dropLast(suffix.count)) \(short)"
     }
 
-    static func percentText(_ row: WidgetRow, density: RowDensity) -> String {
+    // "6%" or "6% used"; a dollar limit reads "$14" or "$14 of $250".
+    static func percentText(_ row: WidgetRow, density: RowDensity, locale: Locale = .autoupdatingCurrent) -> String {
+        if let dollars = row.dollars {
+            return density == .mini ? DollarAmounts.whole(dollars.used, locale) : dollars.text(locale: locale)
+        }
         let percent = "\(Int(row.usedPercent.rounded()))%"
         return density == .mini ? percent : "\(percent) used"
     }
@@ -192,8 +205,14 @@ enum QuotaWidgetModel {
     // e.g. "Claude weekly, 17 percent used, resets Saturday 2:59 PM"
     static func accessibilityLabel(_ row: WidgetRow, in section: WidgetSection, locale: Locale = .autoupdatingCurrent,
                                    timeZone: TimeZone = .autoupdatingCurrent) -> String {
-        let name = row.isModelCap ? "\(row.label) model limit" : row.label.lowercased()
-        var parts = ["\(section.name) \(name)", "\(Int(row.usedPercent.rounded())) percent used"]
+        let name: String
+        switch row.scope {
+        case .provider: name = row.label.lowercased()
+        case .model: name = "\(row.label) model limit"
+        case .surface: name = "\(row.label) product limit"
+        }
+        let used = row.dollars.map { "\($0.text(locale: locale)) used" } ?? "\(Int(row.usedPercent.rounded())) percent used"
+        var parts = ["\(section.name) \(name)", used]
         if let resetsAt = row.resetsAt {
             let style = Date.FormatStyle(locale: locale, timeZone: timeZone)
             let time = row.longWindow
@@ -448,7 +467,7 @@ private struct WindowRow: View {
     let density: RowDensity
 
     private var fill: Color {
-        UsagePalette.barFill(usedPercent: row.usedPercent, isStale: row.isStale, tint: row.tint)
+        UsagePalette.barFill(isWarning: row.isWarning, isStale: row.isStale, tint: row.tint)
     }
 
     var body: some View {

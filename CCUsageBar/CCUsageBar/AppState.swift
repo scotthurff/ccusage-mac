@@ -227,7 +227,8 @@ class AppState: ObservableObject {
 
     // Hottest current gauge across providers and model caps. Outdated or
     // unconfirmed numbers stay out of the menu bar; the popover keeps them.
-    // Hint: CL/CX for providers, first two letters for model caps (Fable → FA).
+    // Hint: CL/CX for providers; for a cap, the first two letters of a
+    // one-word name (Fable → FA) or the initials of a longer one (Claude Code → CC).
     var hottestLimit: (hint: String, percent: Double)? {
         Self.quotaProviders
             .flatMap { provider in
@@ -239,7 +240,11 @@ class AppState: ObservableObject {
     }
 
     private static func menuBarHint(_ provider: QuotaProvider, _ window: QuotaWindow) -> String {
-        if window.scope == .model { return String(window.label.uppercased().prefix(2)) }
+        if window.scope != .provider {
+            let words = window.label.split(separator: " ")
+            let hint = words.count > 1 ? String(words.prefix(2).compactMap(\.first)) : String(window.label.prefix(2))
+            return hint.uppercased()
+        }
         switch provider {
         case .claude: return Provider.claude.menuBarHint
         case .codex: return Provider.codex.menuBarHint
@@ -247,8 +252,10 @@ class AppState: ObservableObject {
         }
     }
 
+    // Any current limit in warning: Anthropic's own rating where it sends
+    // one, the shared warning line otherwise.
     var limitWarningActive: Bool {
-        (hottestLimit?.percent ?? 0) >= QuotaPresentation.warningPercent
+        Self.quotaProviders.contains { presentation($0).windows.contains(where: \.isWarning) }
     }
 
     // Menu bar: "$80 · CL 62%" — cost-only when no current limit, limit-only

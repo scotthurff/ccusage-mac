@@ -244,11 +244,17 @@ enum PhoneText {
     }
 
     static func windowLabel(_ window: QuotaWindow) -> String {
-        window.scope == .model ? "\(window.label) · model limit" : window.label
+        switch window.scope {
+        case .provider: window.label
+        case .model: "\(window.label) · model limit"
+        case .surface: "\(window.label) · product limit"
+        }
     }
 
-    static func percentUsed(_ window: QuotaWindow) -> String {
-        "\(Int(window.usedPercent.rounded()))% used"
+    // "17% used", or "$14 of $250 used" for a dollar limit.
+    static func percentUsed(_ window: QuotaWindow, locale: Locale = .autoupdatingCurrent) -> String {
+        if let dollars = window.dollars { return "\(dollars.text(locale: locale)) used" }
+        return "\(Int(window.usedPercent.rounded()))% used"
     }
 
     // "today 2:59 PM", "Saturday 2:59 PM" within six days, else "Oct 23 at 2:59 PM".
@@ -276,11 +282,15 @@ enum PhoneText {
     // e.g. "Claude weekly, 17 percent used, resets Saturday 2:59 PM"
     static func accessibilityLabel(_ window: WindowPresentation, provider: ProviderPresentation, now: Date,
                                    calendar: Calendar = .autoupdatingCurrent, locale: Locale = .autoupdatingCurrent) -> String {
-        let name = window.window.scope == .model
-            ? "\(window.window.label) model limit"
-            : window.window.label.lowercased()
-        var parts = ["\(provider.provider.displayName) \(name)",
-                     "\(Int(window.window.usedPercent.rounded())) percent used"]
+        let name: String
+        switch window.window.scope {
+        case .provider: name = window.window.label.lowercased()
+        case .model: name = "\(window.window.label) model limit"
+        case .surface: name = "\(window.window.label) product limit"
+        }
+        let used = window.window.dollars.map { "\($0.text(locale: locale)) used" }
+            ?? "\(Int(window.window.usedPercent.rounded())) percent used"
+        var parts = ["\(provider.provider.displayName) \(name)", used]
         if let resetsAt = window.window.resetsAt {
             let time = localTime(resetsAt, now: now, calendar: calendar, locale: locale)
             parts.append(window.state == .resetPassedUnconfirmed

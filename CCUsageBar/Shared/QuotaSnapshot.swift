@@ -63,6 +63,18 @@ struct QuotaObservation: Codable, Equatable {
 enum WindowScope: String, Codable {
     case provider   // the account-wide allowance
     case model      // a model-specific cap inside it, e.g. Fable
+    case surface    // a product-specific cap inside it, e.g. Claude Code
+}
+
+// The provider's own rating of how close a window is to its limit.
+enum QuotaSeverity: String, Codable {
+    case normal, warning, critical
+}
+
+// A limit counted in dollars instead of a share of usage.
+struct DollarAmounts: Codable, Equatable {
+    var used: Double
+    var limit: Double
 }
 
 struct QuotaWindow: Codable, Equatable {
@@ -72,6 +84,9 @@ struct QuotaWindow: Codable, Equatable {
     var usedPercent: Double
     var resetsAt: Date?
     var scope: WindowScope
+    // Nil when the provider sends no rating; the shared warning line applies.
+    var severity: QuotaSeverity? = nil
+    var dollars: DollarAmounts? = nil
 }
 
 struct CollectionAttempt: Codable, Equatable {
@@ -173,6 +188,11 @@ extension QuotaSnapshot {
                     throw SnapshotDecodeError.invalidValue("durationMinutes")
                 }
                 if let reset = window.resetsAt { try Self.check(reset, "resetsAt") }
+                if let dollars = window.dollars {
+                    guard dollars.used.isFinite, dollars.used >= 0, dollars.limit.isFinite, dollars.limit > 0 else {
+                        throw SnapshotDecodeError.invalidValue("dollars")
+                    }
+                }
             }
         }
     }

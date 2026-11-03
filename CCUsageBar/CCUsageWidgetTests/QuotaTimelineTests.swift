@@ -136,7 +136,7 @@ final class QuotaTimelineTests: XCTestCase {
         XCTAssertEqual(claude.rows.map(\.label), ["5-hour", "Weekly", "Fable weekly"])
         XCTAssertEqual(claude.rows.map(\.shortLabel), ["5h", "Wk", "Fable"])
         XCTAssertEqual(claude.rows.map(\.tint), [.claude, .claude, .fable])
-        XCTAssertEqual(claude.rows.map(\.isModelCap), [false, false, true])
+        XCTAssertEqual(claude.rows.map(\.isCap), [false, false, true])
         XCTAssertEqual(codex.rows.map(\.shortLabel), ["Wk"])
         XCTAssertEqual(codex.rows.map(\.tint), [.codex])
 
@@ -201,14 +201,45 @@ final class QuotaTimelineTests: XCTestCase {
         XCTAssertEqual(sections[0].rows.count, 3)
     }
 
-    // The app's details use this same rule, so a model cap matches on both.
-    func testBarFillUsesScopeForFableColorAndTheSharedWarningLine() {
+    // The app's details use this same rule, so a cap matches on both.
+    func testBarFillUsesScopeForFableColorAndTheWarningRule() {
         XCTAssertEqual(QuotaWidgetModel.tint(.claude, scope: .model), .fable)
+        XCTAssertEqual(QuotaWidgetModel.tint(.claude, scope: .surface), .fable)
         XCTAssertEqual(QuotaWidgetModel.tint(.claude, scope: .provider), .claude)
         XCTAssertEqual(QuotaWidgetModel.tint(.codex, scope: .model), .codex)
-        XCTAssertEqual(UsagePalette.barFill(usedPercent: 79.9, isStale: false, tint: .fable), UsagePalette.fable)
-        XCTAssertEqual(UsagePalette.barFill(usedPercent: QuotaPresentation.warningPercent, isStale: false, tint: .claude), .red)
-        XCTAssertEqual(UsagePalette.barFill(usedPercent: 95, isStale: true, tint: .claude), .gray.opacity(0.5))
+        XCTAssertEqual(UsagePalette.barFill(isWarning: false, isStale: false, tint: .fable), UsagePalette.fable)
+        XCTAssertEqual(UsagePalette.barFill(isWarning: true, isStale: false, tint: .claude), .red)
+        XCTAssertEqual(UsagePalette.barFill(isWarning: true, isStale: true, tint: .claude), .gray.opacity(0.5))
+    }
+
+    func testDollarLimitAndProductCapRows() throws {
+        var snapshot = QuotaSnapshot(version: QuotaSnapshot.currentVersion, revision: 1, publishedAt: Date(timeIntervalSince1970: 1_792_003_341), providers: [])
+        var severe = QuotaWindow(id: "claude:surface:claude-code", label: "Claude Code", durationMinutes: 10_080, usedPercent: 20,
+                                 resetsAt: nil, scope: .surface)
+        severe.severity = .warning
+        snapshot.providers = [ProviderSlot(provider: .claude, generation: "g", acceptedAttempt: 1, observation: QuotaObservation(
+            source: "claude-oauth-usage", observedAt: snapshot.publishedAt, windows: [
+                QuotaWindow(id: "claude:7d", label: "Weekly", durationMinutes: 10_080, usedPercent: 2, resetsAt: nil, scope: .provider),
+                QuotaWindow(id: "claude:dollars:x", label: "Dollar limit", durationMinutes: nil, usedPercent: 5.8,
+                            resetsAt: snapshot.publishedAt.addingTimeInterval(2 * 86_400), scope: .provider,
+                            dollars: DollarAmounts(used: 14.48, limit: 250)),
+                severe,
+            ], resetCredits: nil, creditBalance: nil), lastAttempt: nil)]
+        let claude = try XCTUnwrap(QuotaWidgetModel.sections(for: snapshot, now: snapshot.publishedAt.addingTimeInterval(60)).first)
+        XCTAssertEqual(claude.rows.map(\.id), ["claude:7d", "claude:surface:claude-code", "claude:dollars:x"])
+        let cap = claude.rows[1], dollar = claude.rows[2]
+        let locale = Locale(identifier: "en_US")
+        XCTAssertEqual(dollar.shortLabel, "$")
+        XCTAssertEqual(QuotaWidgetModel.percentText(dollar, density: .mini, locale: locale), "$14")
+        XCTAssertEqual(QuotaWidgetModel.percentText(dollar, density: .full, locale: locale), "$14 of $250")
+        XCTAssertTrue(dollar.longWindow, "a reset two days off shows its weekday")
+        XCTAssertFalse(dollar.isCap)
+        XCTAssertEqual(cap.label, "Claude Code weekly")
+        XCTAssertTrue(cap.isCap)
+        XCTAssertTrue(cap.isWarning, "Anthropic's rating colors the bar even at 20%")
+        XCTAssertTrue(QuotaWidgetModel.accessibilityLabel(cap, in: claude, locale: locale).hasPrefix("Claude Claude Code weekly product limit"))
+        XCTAssertEqual(claude.smallRows.map(\.id), ["claude:7d", "claude:surface:claude-code", "claude:dollars:x"],
+                       "a cap closer to its limit than every account-wide window shows on the small size")
     }
 
     // MARK: Scenario 3 (AE6): offline time passes; values go outdated, never zero

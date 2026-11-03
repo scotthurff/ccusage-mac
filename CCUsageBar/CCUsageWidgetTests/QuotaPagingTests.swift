@@ -64,7 +64,7 @@ final class QuotaPagingTests: XCTestCase {
         let sections = sections(snapshot)
         // Provider-wide windows stay ahead of model caps.
         XCTAssertEqual(Array(sections[0].rows.prefix(2).map(\.id)), ["claude:5h", "claude:7d"])
-        XCTAssertTrue(sections[0].rows.dropFirst(2).allSatisfy(\.isModelCap))
+        XCTAssertTrue(sections[0].rows.dropFirst(2).allSatisfy(\.isCap))
 
         for (family, height) in [(WidgetFamily.systemLarge, largeHeight), (.systemMedium, mediumHeight)] {
             let pages = QuotaPaging.pages(for: sections, family: family, height: height, typeSize: .large)

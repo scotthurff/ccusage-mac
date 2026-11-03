@@ -6,8 +6,8 @@ macOS menu bar app for tracking [Claude Code](https://claude.ai/claude-code) and
 
 ## Features
 
-- Today's cost + hottest rate-limit % in the menu bar (warning icon at ≥80%)
-- Rate-limit portrait: Claude and Codex 5-hour + weekly usage with reset times, each reading's age, and gray outdated values
+- Today's cost + hottest rate-limit % in the menu bar (warning icon when Anthropic rates a Claude bar a warning, or at ≥80% for Codex)
+- Rate-limit portrait: Claude's bars as Anthropic lists them (weekly, model and product caps, dollar limits, and the 5-hour window when listed), Codex 5-hour + weekly, with reset times, each reading's age, and gray outdated values
 - iPhone Home Screen widget (small, medium, large) and companion app, fed by private iCloud snapshots from the Mac
 - 7-day usage history with stacked Claude/Codex bars
 - 14-day total

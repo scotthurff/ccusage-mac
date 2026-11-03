@@ -55,14 +55,7 @@ enum QuotaValues {
 
 // MARK: - Mac popover layout
 
-// One popover row: a short window (under a day) and a long one side by side.
-struct MacQuotaRow: Equatable {
-    let title: String
-    let isModel: Bool
-    let short: WindowPresentation?
-    let long: WindowPresentation?
-}
-
+// One popover line: a limit's name, bar, value, and reset.
 struct MacGauge: Equatable {
     enum Tone: Equatable {
         case normal, warning
@@ -70,53 +63,52 @@ struct MacGauge: Equatable {
         case neutral
     }
 
+    let id: String
     let label: String
-    let percentText: String
+    // A model or product cap inside the provider's allowance.
+    let isCap: Bool
+    let valueText: String
     let fill: Double
     let tone: Tone
     // The reset time passed with no newer reading to confirm the new value.
     let isStruckThrough: Bool
     // Only a reset that is still ahead.
     let resetsAt: Date?
+    // A day or longer, or an unknown length: the reset shows its weekday.
+    let resetShowsWeekday: Bool
     let help: String
 }
 
 // Turns the shared presentation (the same rules the phone uses) into the
-// popover's rows and gauges.
+// popover's lines, one per window, in the shared order.
 enum MacQuotaDisplay {
-    // The standard 5-hour and weekly windows share the provider row. Any other
-    // account-wide window, and every model cap, gets a row of its own.
-    static func rows(_ presentation: ProviderPresentation, title: String) -> [MacQuotaRow] {
-        let account = presentation.windows.filter { $0.window.scope == .provider }
-        let short = account.first { isAbout($0, 300) } ?? account.first(where: isShort)
-        let long = account.first { isAbout($0, 10_080) } ?? account.first { !isShort($0) }
-        var rows = [MacQuotaRow(title: title, isModel: false, short: short, long: long)]
-        for window in presentation.windows where window.window.id != short?.window.id && window.window.id != long?.window.id {
-            rows.append(MacQuotaRow(title: window.window.label.uppercased(), isModel: window.window.scope == .model,
-                                    short: isShort(window) ? window : nil, long: isShort(window) ? nil : window))
-        }
-        return rows
+    static func gauges(_ presentation: ProviderPresentation) -> [MacGauge] {
+        presentation.windows.map(gauge)
     }
 
     static func gauge(_ window: WindowPresentation) -> MacGauge {
         let used = window.window.usedPercent
-        let text = "\(Int(used.rounded()))%"
+        // A dollar limit reads "$14 of $250"; everything else is a percentage.
+        let text = window.window.dollars?.text() ?? "\(Int(used.rounded()))%"
         let name = window.window.label
-        let label = shortLabel(window.window.durationMinutes)
-        let fill = min(max(used, 0), 100)
+        let tone: MacGauge.Tone
+        let help: String
         switch window.state {
         case .current:
-            return MacGauge(label: label, percentText: text, fill: fill, tone: used >= QuotaPresentation.warningPercent ? .warning : .normal,
-                            isStruckThrough: false, resetsAt: window.window.resetsAt, help: "\(name): \(text) used")
+            tone = window.isWarning ? .warning : .normal
+            help = "\(name): \(text) used"
         case .outdated:
-            return MacGauge(label: label, percentText: text, fill: fill, tone: .neutral, isStruckThrough: false,
-                            resetsAt: window.window.resetsAt,
-                            help: "\(name): \(text) used at the last reading, which is out of date")
+            tone = .neutral
+            help = "\(name): \(text) used at the last reading, which is out of date"
         case .resetPassedUnconfirmed:
-            return MacGauge(label: label, percentText: text, fill: fill, tone: .neutral, isStruckThrough: true,
-                            resetsAt: nil,
-                            help: "\(name): this window reset after the last reading (\(text) used then). Waiting for a new reading.")
+            tone = .neutral
+            help = "\(name): this window reset after the last reading (\(text) used then). Waiting for a new reading."
         }
+        return MacGauge(id: window.window.id, label: name, isCap: window.window.scope != .provider, valueText: text,
+                        fill: min(max(used, 0), 100), tone: tone,
+                        isStruckThrough: window.state == .resetPassedUnconfirmed,
+                        resetsAt: window.state == .resetPassedUnconfirmed ? nil : window.window.resetsAt,
+                        resetShowsWeekday: (window.window.durationMinutes ?? .max) >= 1_440, help: help)
     }
 
     // How long ago the provider was last read; nil before the first reading.
@@ -143,19 +135,10 @@ enum MacQuotaDisplay {
         }
     }
 
-    private static func isShort(_ window: WindowPresentation) -> Bool {
-        (window.window.durationMinutes ?? .max) < 1_440
-    }
-
-    private static func isAbout(_ window: WindowPresentation, _ minutes: Int) -> Bool {
-        window.window.durationMinutes.map { abs($0 - minutes) <= 1 } ?? false
-    }
-
-    // The shared short names in lowercase ("5h", "wk", "3d"), or "lim" when
-    // the length is unknown.
-    private static func shortLabel(_ minutes: Int?) -> String {
-        guard let minutes else { return "lim" }
-        return QuotaWindow.shortName(minutes: minutes).lowercased()
+    // Shown in place of the bars when a provider has none to show.
+    static func emptyText(_ presentation: ProviderPresentation) -> String? {
+        guard presentation.windows.isEmpty else { return nil }
+        return presentation.observedAt == nil ? "No reading yet" : "No limits in the last reading"
     }
 }
 
